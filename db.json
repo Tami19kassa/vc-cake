@@ -1,0 +1,106 @@
+{
+  "admins": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password": "$2b$10$FRNUKWk28K479cDXCpwH1ezrvIlMd81eHQoEkq5fAUvq4T//2gtLy",
+      "createdAt": "2026-07-08T18:39:04.483Z"
+    }
+  ],
+  "hero_settings": [
+    {
+      "id": 1,
+      "title": "{\"en\":\"Master the Art of Baking at VC Cake Academy\",\"am\":\"በቪሲ ኬክ አካዳሚ የኬክ አሰራር ጥበብን ያዳብሩ\"}",
+      "subtitle": "{\"en\":\"Become a certified professional cake baker in just one month! Join our flexible shifts: Morning, Afternoon, or Night. Learn cake design, decoration, pastry making, and start your own sweet business.\",\"am\":\"በአንድ ወር ውስጥ የተረጋገጠ የኬክ ባለሙያ ይሁኑ! በእኛ አመቺ ፈረቃዎች ይሳተፉ፡ የጠዋት፣ ከሰዓት ወይም የማታ። የኬክ ዲዛይን፣ ማስጌጥ፣ ኬክ ጋገራ ይማሩና የራስዎን ስራ ይጀምሩ።\"}",
+      "ctaText": "{\"en\":\"Register Now\",\"am\":\"አሁን ይመዝገቡ\"}",
+      "imageUrl": "https://images.unsplash.com/photo-1581299894007-aaa50297cf16?q=80&w=800&auto=format&fit=crop",
+      "updatedAt": "2026-07-08T18:39:04.486Z"
+    }
+  ],
+  "articles": [
+    {
+      "id": 1,
+      "title": "{\"en\":\"Top 5 Tips for Making a Fluffy Sponge Cake\",\"am\":\"ለስላሳ ስፖንጅ ኬክ ለመስራት 5 ዋና ምክሮች\"}",
+      "content": "{\"en\":\"Making a perfect sponge cake is the foundation of cake decorating. 1. Always use room temperature eggs. 2. Measure your ingredients accurately by weight, not volume. 3. Sift the flour at least twice to incorporate air. 4. Avoid opening the oven door during the first 20 minutes of baking. 5. Let the cake cool completely in the pan before taking it out.\",\"am\":\"ጥሩ ስፖንጅ ኬክ መስራት የኬክ ማስዋብ መሰረት ነው። 1. ሁልጊዜ ክፍል ሙቀት ያላቸው እንቁላሎችን ይጠቀሙ። 2. ንጥረ ነገሮችን በክብደት ይለኩ። 3. አየር እንዲገባ ዱቄቱን ቢያንስ ሁለት ጊዜ ይንፉ። 4. በመጀመሪያዎቹ 20 ደቂቃዎች የምድጃውን በር አይክፈቱ። 5. ኬኩ ሙሉ በሙሉ እስኪቀዘቅዝ ድረስ በእቃው ውስጥ ይተዉት።\"}",
+      "type": "blog",
+      "mediaUrl": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=600&auto=format&fit=crop",
+      "createdAt": "2026-07-08T18:39:04.489Z"
+    },
+    {
+      "id": 2,
+      "title": "{\"en\":\"How to Frost a Cake with Smooth Buttercream\",\"am\":\"ኬክን በለስላሳ በቅቤ ክሬም እንዴት መቀባት እንደሚቻል\"}",
+      "content": "{\"en\":\"Getting that perfectly smooth finish with buttercream frosting is easier than it looks. In this vlog, we walk you through the crumb-coat technique, using a turntable, and aligning your cake scraper to get sharp edges and a silky smooth finish.\",\"am\":\"በቅቤ ክሬም (buttercream) ኬክን በሚገባ ማስዋብ ከምናስበው በላይ ቀላል ነው። በዚህ ቪዲዮ ውስጥ ስፓቱላ እና መቧጠጫዎችን በመጠቀም እንዴት ኬክን በሚያምር አጨራረስ ማውጣት እንደሚቻል እናሳያለን።\"}",
+      "type": "vlog",
+      "mediaUrl": "https://www.youtube.com/embed/v8yH7Boc9sw",
+      "createdAt": "2026-07-08T18:39:04.489Z"
+    },
+    {
+      "id": 3,
+      "title": "{\"en\":\"Making Beautiful Fondant Flowers for Beginners\",\"am\":\"ለጀማሪዎች የሚሆኑ የፎንዳንት አበቦች አሰራር\"}",
+      "content": "{\"en\":\"Fondant designs add a premium, custom touch to any celebration cake. Learn how to work with gum paste, use flower cutters, color your fondant with gel food colors, and dry your sugar petals so they look realistic and delicate.\",\"am\":\"የፎንዳንት (fondant) ዲዛይኖች ለማንኛውም ኬክ ልዩ ውበት ይሰጣሉ። በዚህ መመሪያ ውስጥ የፎንዳንት አበባዎችን መስራት፣ ቀለሞችን መቀላቀል እና የተፈጥሮ ቅርጽ ያላቸውን አበቦች ማዘጋጀት እንማራለን።\"}",
+      "type": "blog",
+      "mediaUrl": "https://images.unsplash.com/photo-1535141192574-5d4897c13636?q=80&w=600&auto=format&fit=crop",
+      "createdAt": "2026-07-08T18:39:04.489Z"
+    },
+    {
+      "id": 4,
+      "title": "{\"en\":\"VC Cake Academy Class Showcase\",\"am\":\"የቪሲ ኬክ አካዳሚ የስልጠና ትዕይንት\"}",
+      "content": "{\"en\":\"Watch our afternoon shift students work on their final wedding cake project. See their dedication, learning, and the amazing output they achieve in just one month of training.\",\"am\":\"የከሰዓት በኋላ ፈረቃ ተማሪዎቻችን በሰርግ ኬክ ማጠቃለያ ፕሮጀክታቸው ላይ ሲሰሩ ይመልከቱ። በአንድ ወር ስልጠና ውስጥ ያሳዩትን ትጋት እና ያመረቱትን አስደናቂ ኬክ ይመልከቱ።\"}",
+      "type": "vlog",
+      "mediaUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+      "createdAt": "2026-07-08T18:39:04.489Z"
+    }
+  ],
+  "testimonies": [
+    {
+      "id": 1,
+      "clientName": "Aster Kassa",
+      "avatarUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&auto=format&fit=crop",
+      "text": "{\"en\":\"VC Cake Academy changed my life! The afternoon shift fits my college schedule perfectly. In just one month, I went from not knowing how to mix batter to baking beautiful 3-tier wedding cakes!\",\"am\":\"ቪሲ ኬክ አካዳሚ ህይወቴን ቀይሮታል! የከሰዓት በኋላ ፈረቃ ከኮሌጅ ትምህርቴ ጋር በሚገባ ይጣጣማል። በአንድ ወር ውስጥ ብቻ ምንም ሳላውቅ ተነስቼ የሰርግ ኬኮችን እስከመስራት ደርሻለሁ!\"}",
+      "rating": 5,
+      "createdAt": "2026-07-08T18:39:04.489Z"
+    },
+    {
+      "id": 2,
+      "clientName": "Martha Tolosa",
+      "avatarUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=150&auto=format&fit=crop",
+      "text": "{\"en\":\"I ordered a custom chocolate-fudge birthday cake for my daughter. It was stunningly beautiful and absolutely delicious. The registration and ordering process was extremely smooth, and payment verification was quick.\",\"am\":\"ለልጄ የልደት ቸኮሌት ኬክ አዝዤ ነበር። በጣም ያምር ነበር፣ ጣዕሙም ልዩ ነበር። የምዝገባ እና የማዘዝ ሂደቱ በጣም ፈጣን ነበር፣ ክፍያዎችንም ወዲያውኑ አረጋግጠውልኛል።\"}",
+      "rating": 5,
+      "createdAt": "2026-07-08T18:39:04.489Z"
+    },
+    {
+      "id": 3,
+      "clientName": "Yonas Gebre",
+      "avatarUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150&auto=format&fit=crop",
+      "text": "{\"en\":\"The night shift class is excellent for working professionals. The instructors are patient, highly skilled, and teach practical business tips along with baking techniques.\",\"am\":\"የማታ ፈረቃ ክፍል ለሰራተኞች እጅግ አመቺ ነው። አስተማሪዎቹ ታጋሽ እና ከፍተኛ ችሎታ ያላቸው ናቸው፣ ከመጋገሪያው በተጨማሪ የንግድ ምክሮችንም ያስተምራሉ።\"}",
+      "rating": 5,
+      "createdAt": "2026-07-08T18:39:04.489Z"
+    }
+  ],
+  "cbe_mock_transactions": [
+    {
+      "referenceId": "FT2608123456",
+      "amount": 2500,
+      "senderName": "Aster Kassa",
+      "timestamp": "2026-07-08T18:39:04.489Z",
+      "isClaimed": false
+    },
+    {
+      "referenceId": "FT2608987654",
+      "amount": 4500,
+      "senderName": "Martha Tolosa",
+      "timestamp": "2026-07-08T18:39:04.489Z",
+      "isClaimed": false
+    },
+    {
+      "referenceId": "FT2608444444",
+      "amount": 2500,
+      "senderName": "Yonas Gebre",
+      "timestamp": "2026-07-08T18:39:04.489Z",
+      "isClaimed": false
+    }
+  ],
+  "course_registrations": [],
+  "cake_orders": [],
+  "contact_messages": []
+}
