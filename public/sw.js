@@ -12,6 +12,7 @@ self.addEventListener("install", (event) => {
       return cache.addAll(ASSETS);
     })
   );
+  self.skipWaiting();
 });
 
 // Activate Service Worker
@@ -27,6 +28,7 @@ self.addEventListener("activate", (event) => {
       );
     })
   );
+  self.clients.claim();
 });
 
 // Intercept fetch requests for caching
@@ -59,8 +61,6 @@ self.addEventListener("fetch", (event) => {
           });
         }
         return response;
-      }).catch(() => {
-        // Fallback offline handling
       });
     })
   );
