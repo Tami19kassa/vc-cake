@@ -146,9 +146,8 @@ export default function Home() {
       <div className="aurora-glow top-[50%] left-[80%]" />
       <div className="aurora-glow top-[80%] left-[10%]" />
 
-      <Navbar />
-
       <div className="relative z-10 w-full min-h-screen">
+        <Navbar />
         
         {/* Section 1: Hero Section (CraveLane Full-Screen Poster) */}
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden p-0 border-b border-[#4a2c11]/10 bg-[#fdfbf7]">
