@@ -42,7 +42,7 @@ export default function Home() {
       en: "Register Now",
       am: "አሁን ይመዝገቡ"
     }),
-    imageUrl: "https://images.unsplash.com/photo-1581299894007-aaa50297cf16?q=80&w=800&auto=format&fit=crop"
+    imageUrl: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=600&auto=format&fit=crop"
   });
 
   const [articles, setArticles] = useState([]);
@@ -137,7 +137,7 @@ export default function Home() {
 
   const dbSubtitle = getTranslation(heroSettings.subtitle, lang);
   const dbCtaText = getTranslation(heroSettings.ctaText, lang);
-  const dbImageUrl = heroSettings.imageUrl || "https://images.unsplash.com/photo-1581299894007-aaa50297cf16?q=80&w=800&auto=format&fit=crop";
+  const dbImageUrl = heroSettings.imageUrl || "https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=600&auto=format&fit=crop";
 
   return (
     <div className="min-h-screen bg-[#fdfbf7] text-[#2c1d11] relative overflow-hidden grid-bg">
@@ -150,17 +150,16 @@ export default function Home() {
 
       <div className="relative z-10 w-full min-h-screen">
         
-        {/* Section 1: Hero Section (CraveLane Unified Poster Design) */}
-        <section className="relative min-h-screen flex items-center justify-center overflow-hidden px-4 sm:px-6 lg:px-8 pt-24 pb-16">
+        {/* Section 1: Hero Section (CraveLane Full-Screen Poster) */}
+        <section className="relative min-h-screen flex items-center justify-center overflow-hidden p-0 border-b border-[#4a2c11]/10 bg-[#fdfbf7]">
           
-          {/* Main Poster Container Card */}
-          <div className="max-w-6xl mx-auto w-full rounded-[32px] overflow-hidden border border-[#4a2c11]/15 bg-[#fdfbf7] shadow-2xl relative lg:h-[650px] flex flex-col lg:flex-row p-0">
-            
-            {/* Double Border Frame Overlay (Desktop only for precision bounds) */}
-            <div className="absolute inset-1.5 border border-[#4a2c11]/10 rounded-[26px] pointer-events-none z-40 hidden lg:block" />
+          {/* Double Border Frame Overlay (Resting nicely inside screen padding) */}
+          <div className="absolute inset-4 sm:inset-6 border border-[#4a2c11]/10 rounded-3xl pointer-events-none z-40 hidden lg:block" />
 
-            {/* Left Side: Info details & Category icons */}
-            <div className="w-full lg:w-[58%] p-8 sm:p-12 md:p-16 flex flex-col justify-center space-y-6 relative z-10 lg:pb-36">
+          <div className="w-full h-full min-h-screen flex flex-col lg:flex-row relative">
+            
+            {/* Left Side: Poster content */}
+            <div className="w-full lg:w-[56%] p-8 sm:p-12 md:p-16 lg:pl-24 flex flex-col justify-center space-y-6 relative z-10 pt-28 lg:pb-36">
               
               {/* Badge */}
               <div className="text-center lg:text-left">
@@ -170,14 +169,14 @@ export default function Home() {
               </div>
               
               {/* Main Heading */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight text-[#2c1d11] font-serif tracking-tight text-center lg:text-left">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] text-[#2c1d11] font-serif tracking-tight text-center lg:text-left">
                 {lang === "en" ? (
                   <>
-                    Made with <span className="text-[#c5a059] italic font-normal font-serif">love</span>, baked to perfection.
+                    Made with <span className="text-[#c5a059] italic font-normal font-serif">love</span>,<br />baked to perfection.
                   </>
                 ) : (
                   <>
-                    በፍቅር ተዘጋጅቶ፣ <span className="text-[#c5a059] italic font-normal font-serif">በደስታ</span> የተጋገረ።
+                    በፍቅር ተዘጋጅቶ፣<br /><span className="text-[#c5a059] italic font-normal font-serif">በደስታ</span> የተጋገረ።
                   </>
                 )}
               </h1>
@@ -194,15 +193,15 @@ export default function Home() {
                 {dbSubtitle}
               </p>
 
-              {/* Category Bubbles */}
-              <div className="flex items-center justify-center lg:justify-start gap-6 py-2">
+              {/* Category Bubbles (Boutique Style) */}
+              <div className="flex items-center justify-center lg:justify-start gap-8 py-2">
                 {[
-                  { label: lang === "en" ? "CAKES" : "ኬኮች", icon: <Cake size={20} /> },
-                  { label: lang === "en" ? "CUPCAKES" : "ኩባያ ኬክ", icon: <Sparkles size={20} /> },
-                  { label: lang === "en" ? "PASTRIES" : "ጣፋጮች", icon: <Award size={20} /> }
+                  { label: lang === "en" ? "CAKES" : "ኬኮች", icon: <Cake size={18} /> },
+                  { label: lang === "en" ? "CUPCAKES" : "ኩባያ ኬክ", icon: <Sparkles size={18} /> },
+                  { label: lang === "en" ? "PASTRIES" : "ጣፋጮች", icon: <Award size={18} /> }
                 ].map((item, idx) => (
-                  <div key={idx} className="flex flex-col items-center gap-1">
-                    <div className="w-12 h-12 rounded-full bg-[#4a2c11] text-[#fdfbf7] flex items-center justify-center border border-[#c5a059]/30 shadow-md transition-transform duration-300 hover:scale-105">
+                  <div key={idx} className="flex flex-col items-center gap-1.5">
+                    <div className="w-12 h-12 rounded-full border border-[#4a2c11]/15 text-[#4a2c11] flex items-center justify-center bg-[#fdfbf7] shadow-sm hover:border-[#c5a059] hover:text-[#c5a059] transition duration-300">
                       {item.icon}
                     </div>
                     <span className="text-[9px] font-bold tracking-widest text-[#4a2c11] font-sans">{item.label}</span>
@@ -224,7 +223,7 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Mobile Contact Row (displays at bottom of text block under lg width) */}
+              {/* Mobile Contact Row */}
               <div className="lg:hidden border-t border-[#4a2c11]/10 pt-6 flex flex-wrap gap-4 text-[#5c4638] text-xs justify-center">
                 <div className="flex items-center gap-2">
                   <Phone size={14} className="text-[#c5a059]" />
@@ -241,43 +240,43 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right Side: Full-bleed shelves background + Chef portrait */}
-            <div className="w-full lg:w-[42%] relative h-[350px] lg:h-full overflow-hidden bg-[#fbf9f4]">
+            {/* Right Side: Visual Panel (Premium light gradient fallback) */}
+            <div className="w-full lg:w-[44%] relative h-[450px] lg:h-screen overflow-hidden bg-gradient-to-br from-[#f8f5ee] to-[#ece5d8] border-l border-[#4a2c11]/5">
               {/* Bakery shelves image (fills frame completely) */}
               <img
                 src="https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=600&auto=format&fit=crop"
                 alt="Bakery showcase backdrop"
-                className="absolute inset-0 w-full h-full object-cover filter blur-[0.5px] opacity-35 scale-105"
+                className="absolute inset-0 w-full h-full object-cover filter blur-[0.5px] opacity-25 scale-105"
               />
               
               {/* Fade gradient transitioning left edge into cream background (Desktop only) */}
               <div className="hidden lg:block absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-[#fdfbf7] to-transparent z-10" />
               
-              {/* Dark vignette overlay for depth */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#2c1d11]/45 via-transparent to-transparent z-10" />
+              {/* Inset card decorative border frame inside Right Column */}
+              <div className="absolute inset-6 border border-[#4a2c11]/10 rounded-2xl pointer-events-none z-30 hidden lg:block" />
 
               {/* Chef Photo (fills block completely, scaling proportionally) */}
               <img
                 src={dbImageUrl}
                 alt="Academy Chef"
-                className="absolute inset-0 w-full h-full object-cover object-top z-20 transition-transform duration-500 hover:scale-102"
+                className="absolute inset-0 w-full h-full object-cover object-center z-20 transition-transform duration-500 hover:scale-102"
               />
 
               {/* Baked Stamp Label */}
-              <div className="absolute top-6 right-6 z-30 bg-[#4a2c11] text-[#fdfbf7] px-2.5 py-1.5 rounded-md border border-[#c5a059]/30 text-[8px] font-bold tracking-widest uppercase transform rotate-6 shadow-md font-sans">
+              <div className="absolute top-8 right-12 z-30 bg-[#4a2c11] text-[#fdfbf7] px-2.5 py-1.5 rounded-md border border-[#c5a059]/30 text-[8px] font-bold tracking-widest uppercase transform rotate-6 shadow-md font-sans">
                 {lang === "en" ? "Baked with Love" : "በፍቅር የተጋገረ"}
               </div>
             </div>
 
-            {/* Absolute bottom curved banner wave (Desktop only, anchors layout) */}
-            <div className="absolute bottom-0 left-0 right-0 z-30 hidden lg:block">
+            {/* Absolute bottom curved banner wave (Desktop only, rests perfectly on the inner border frame) */}
+            <div className="absolute bottom-6 left-6 right-6 z-30 hidden lg:block">
               {/* Curved SVG divider wave */}
               <svg className="w-full h-10 text-[#4a2c11] fill-current -mb-[1px]" viewBox="0 0 1440 100" preserveAspectRatio="none">
                 <path d="M0,50 C360,95 720,95 1080,50 L1440,30 L1440,100 L0,100 Z"></path>
               </svg>
               
               {/* Chocolate bottom contact banner */}
-              <div className="bg-[#4a2c11] px-12 py-5 text-white flex justify-between items-center text-xs border-t border-[#c5a059]/10">
+              <div className="bg-[#4a2c11] px-12 py-5 text-white flex justify-between items-center text-xs rounded-b-2xl border-t border-[#c5a059]/10">
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-2">
                     <Phone size={14} className="text-[#c5a059]" />
@@ -300,7 +299,7 @@ export default function Home() {
                 </div>
 
                 <div className="font-serif italic text-[#c5a059] tracking-wide text-xs">
-                  TASTE THE DIFFERENCE. <span className="text-white italic">Love</span> EVERY BITE.
+                  TASTE THE DIFFERENCE. <span className="text-white italic font-serif">Love</span> EVERY BITE.
                 </div>
               </div>
             </div>

@@ -36,6 +36,15 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Bypass Next.js hot module replacement (HMR) and development compilation chunks
+  if (
+    event.request.url.includes("/_next/") || 
+    event.request.url.includes("webpack-hmr") || 
+    event.request.url.includes("hot-update")
+  ) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {

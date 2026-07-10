@@ -4,6 +4,11 @@ import { useEffect } from "react";
 
 export default function PWARegister() {
   useEffect(() => {
+    // Disable service worker in development to prevent intercepting hot module reloads (HMR)
+    if (process.env.NODE_ENV === "development") {
+      return;
+    }
+
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       const handleRegister = async () => {
         try {
