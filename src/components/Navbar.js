@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, Globe } from "lucide-react";
+import { Menu, X, Globe, Download } from "lucide-react";
 import { translations } from "@/lib/translations";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [lang, setLang] = useState("en");
+
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isInstallable, setIsInstallable] = useState(false);
 
   useEffect(() => {
     const savedLang = localStorage.getItem("lang") || "en";
@@ -19,8 +22,33 @@ export default function Navbar() {
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      setIsInstallable(false);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    };
   }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to install: ${outcome}`);
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+  };
 
   const toggleLanguage = () => {
     const nextLang = lang === "en" ? "am" : "en";
@@ -104,6 +132,16 @@ export default function Navbar() {
             >
               <Globe size={13} /> {t.langToggle}
             </button>
+
+            {/* Custom PWA Install Button */}
+            {isInstallable && (
+              <button
+                onClick={handleInstallClick}
+                className="flex items-center gap-1.5 bg-[#c5a059]/10 border border-[#c5a059]/30 hover:border-[#c5a059] px-2.5 py-1.5 rounded text-xs font-semibold transition cursor-pointer text-[#4a2c11]"
+              >
+                <Download size={13} /> {lang === "en" ? "Install App" : "መተግበሪያውን ጫን"}
+              </button>
+            )}
           </div>
 
           <div className="md:hidden flex items-center gap-3">
@@ -154,6 +192,15 @@ export default function Navbar() {
           >
             {t.contactLink}
           </Link>
+          {/* Custom PWA Install Button for Mobile */}
+          {isInstallable && (
+            <button
+              onClick={handleInstallClick}
+              className="w-full flex items-center justify-center gap-1.5 bg-[#c5a059]/10 border border-[#c5a059]/30 px-3 py-2 rounded text-base font-semibold text-[#4a2c11] mt-2 cursor-pointer"
+            >
+              <Download size={16} /> {lang === "en" ? "Install App" : "መተግበሪያውን ጫን"}
+            </button>
+          )}
         </div>
       )}
     </nav>
