@@ -23,6 +23,8 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
 
   // Sync language configuration
   useEffect(() => {
@@ -31,13 +33,40 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
     }
   }, [propLang, isOpen]);
 
+  // Fetch active products from catalog
+  useEffect(() => {
+    const fetchActiveProducts = async () => {
+      try {
+        const res = await fetch("/api/products?active=true");
+        const data = await res.json();
+        if (data.success) {
+          setProducts(data.products);
+          if (data.products.length > 0) {
+            const firstInStock = data.products.find(p => p.stock > 0) || data.products[0];
+            setForm(f => ({ ...f, cakeType: firstInStock.name }));
+          }
+        }
+      } catch (e) {
+        console.error("Error loading products:", e);
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+    if (isOpen) {
+      fetchActiveProducts();
+    }
+  }, [isOpen]);
+
   // Calculate cost dynamically
   useEffect(() => {
     const size = parseFloat(form.sizeKg) || 1;
     const layers = parseInt(form.layers) || 1;
-    const price = size * 800 + (layers - 1) * 300;
+    const selectedProduct = products.find(p => p.name === form.cakeType);
+    const basePrice = selectedProduct ? selectedProduct.basePrice : 800;
+    const layerPrice = settings?.layerPrice || 300;
+    const price = size * basePrice + (layers - 1) * layerPrice;
     setForm((f) => ({ ...f, amountPaid: price.toString() }));
-  }, [form.sizeKg, form.layers]);
+  }, [form.sizeKg, form.layers, form.cakeType, products, settings]);
 
   // Auto-trigger print on success
   useEffect(() => {
@@ -272,6 +301,19 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
               </button>
             </div>
           </div>
+        ) : (settings?.ordersEnabled === false || settings?.ordersEnabled === 0) ? (
+          <div className="text-center py-12 space-y-4">
+            <div className="w-12 h-12 bg-red-500/10 text-red-400 rounded-full flex items-center justify-center mx-auto border border-red-500/25 animate-pulse">
+              <AlertCircle size={24} />
+            </div>
+            <h3 className="font-serif text-lg font-bold text-white">Custom Cake Orders Closed</h3>
+            <p className="text-xs text-[#c9bfbc] max-w-sm mx-auto leading-relaxed">
+              Custom cake orders are temporarily closed. Please check back later or contact us directly at our phone numbers.
+            </p>
+            <button onClick={onClose} className="border border-white/10 hover:border-white/20 text-[#c9bfbc] px-6 py-2 rounded text-xs cursor-pointer">
+              {t.closeBtn}
+            </button>
+          </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 text-sm">
             {error && (
@@ -365,18 +407,33 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Cake Category</label>
-                <select
-                  name="cakeType"
-                  value={form.cakeType}
-                  onChange={handleChange}
-                  className="input-field bg-[#0c0706] cursor-pointer"
-                >
-                  <option value="Wedding Cake">Wedding Cake</option>
-                  <option value="Birthday Cake">Birthday Cake</option>
-                  <option value="Celebration Cake">Celebration Cake</option>
-                  <option value="Baby Shower Cake">Baby Shower Cake</option>
-                  <option value="Custom Cupcakes">Custom Cupcakes</option>
-                </select>
+                {productsLoading ? (
+                  <div className="input-field bg-[#0c0706] text-gray-400 text-xs flex items-center">
+                    Loading items...
+                  </div>
+                ) : (
+                  <select
+                    name="cakeType"
+                    value={form.cakeType}
+                    onChange={handleChange}
+                    className="input-field bg-[#0c0706] cursor-pointer"
+                  >
+                    {products.map(p => (
+                      <option key={p.id} value={p.name} disabled={p.stock <= 0}>
+                        {p.name} {p.stock !== undefined ? (p.stock > 0 ? `(${p.stock} available)` : " (Out of Stock)") : ""}
+                      </option>
+                    ))}
+                    {products.length === 0 && (
+                      <>
+                        <option value="Wedding Cake">Wedding Cake</option>
+                        <option value="Birthday Cake">Birthday Cake</option>
+                        <option value="Celebration Cake">Celebration Cake</option>
+                        <option value="Baby Shower Cake">Baby Shower Cake</option>
+                        <option value="Custom Cupcakes">Custom Cupcakes</option>
+                      </>
+                    )}
+                  </select>
+                )}
               </div>
 
               <div>
@@ -387,13 +444,13 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
                   onChange={handleChange}
                   className="input-field bg-[#0c0706] cursor-pointer"
                 >
-                  <option value="1">1 Kg (Small - 800 ETB)</option>
-                  <option value="2">2 Kg (Standard - 1600 ETB)</option>
-                  <option value="3">3 Kg (Medium - 2400 ETB)</option>
-                  <option value="4">4 Kg (Large - 3200 ETB)</option>
-                  <option value="5">5 Kg (Extra Large - 4000 ETB)</option>
-                  <option value="7">7 Kg (Grand Size - 5600 ETB)</option>
-                  <option value="10">10 Kg (Premium Size - 8000 ETB)</option>
+                  <option value="1">1 Kg (Small - {(products.find(p => p.name === form.cakeType)?.basePrice || 800)} ETB)</option>
+                  <option value="2">2 Kg (Standard - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 2} ETB)</option>
+                  <option value="3">3 Kg (Medium - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 3} ETB)</option>
+                  <option value="4">4 Kg (Large - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 4} ETB)</option>
+                  <option value="5">5 Kg (Extra Large - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 5} ETB)</option>
+                  <option value="7">7 Kg (Grand Size - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 7} ETB)</option>
+                  <option value="10">10 Kg (Premium Size - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 10} ETB)</option>
                 </select>
               </div>
 
@@ -406,9 +463,9 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
                   className="input-field bg-[#0c0706] cursor-pointer"
                 >
                   <option value="1">1 Layer (Flat)</option>
-                  <option value="2">2 Layers (+300 ETB)</option>
-                  <option value="3">3 Layers (+600 ETB)</option>
-                  <option value="4">4 Layers (+900 ETB)</option>
+                  <option value="2">2 Layers (+{settings?.layerPrice || 300} ETB)</option>
+                  <option value="3">3 Layers (+{(settings?.layerPrice || 300) * 2} ETB)</option>
+                  <option value="4">4 Layers (+{(settings?.layerPrice || 300) * 3} ETB)</option>
                 </select>
               </div>
             </div>

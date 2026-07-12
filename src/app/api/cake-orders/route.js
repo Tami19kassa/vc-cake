@@ -225,8 +225,24 @@ export async function POST(request) {
     const payMethod = paymentMethod || "cbe";
     const targetAmount = Number(amountPaid);
 
-    // --- INSTANT REAL PAYMENT WEB SCRAPER VERIFICATION ---
     const settings = await db.getHeroSettings() || {};
+
+    // Validate global system enablement
+    if (settings.ordersEnabled === 0 || settings.ordersEnabled === false) {
+      return NextResponse.json({ success: false, error: "Custom cake orders are temporarily closed." }, { status: 400 });
+    }
+
+    // Validate product stock limit
+    const products = await db.getProducts();
+    const matchingProduct = products.find(p => p.name.trim().toLowerCase() === cakeType.trim().toLowerCase());
+    if (matchingProduct) {
+      if (matchingProduct.stock <= 0) {
+        return NextResponse.json({ success: false, error: `Sorry, ${cakeType} is currently out of stock.` }, { status: 400 });
+      }
+      // Decrement product stock
+      await db.updateProduct(matchingProduct.id, { stock: matchingProduct.stock - 1 });
+    }
+
     const expectedCbeHolder = settings.cbeAccountHolder || "Biruk Tigistu Lugaba";
     const expectedTeleHolder = settings.telebirrAccountHolder || "Kibrom Haileselassie Abreha";
 

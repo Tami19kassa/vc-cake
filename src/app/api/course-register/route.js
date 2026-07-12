@@ -205,12 +205,41 @@ export async function POST(request) {
 
     // Verify shift option
     const validShifts = ["morning", "afternoon", "night"];
-    if (!validShifts.includes(shift.toLowerCase())) {
+    const shiftLower = shift.toLowerCase();
+    if (!validShifts.includes(shiftLower)) {
       return NextResponse.json({ success: false, error: "Invalid shift selection." }, { status: 400 });
     }
 
-    // --- INSTANT REAL PAYMENT WEB SCRAPER VERIFICATION ---
     const settings = await db.getHeroSettings() || {};
+
+    // Validate global system enablement
+    if (settings.coursesEnabled === 0 || settings.coursesEnabled === false) {
+      return NextResponse.json({ success: false, error: "Course registrations are temporarily closed." }, { status: 400 });
+    }
+
+    // Validate specific shift enablement
+    if (shiftLower === "morning" && (settings.morningShiftEnabled === 0 || settings.morningShiftEnabled === false)) {
+      return NextResponse.json({ success: false, error: "Morning shift registration is currently closed." }, { status: 400 });
+    }
+    if (shiftLower === "afternoon" && (settings.afternoonShiftEnabled === 0 || settings.afternoonShiftEnabled === false)) {
+      return NextResponse.json({ success: false, error: "Afternoon shift registration is currently closed." }, { status: 400 });
+    }
+    if (shiftLower === "night" && (settings.nightShiftEnabled === 0 || settings.nightShiftEnabled === false)) {
+      return NextResponse.json({ success: false, error: "Night shift registration is currently closed." }, { status: 400 });
+    }
+
+    // Validate shift seats capacity
+    const allRegs = await db.getCourseRegistrations();
+    const currentShiftCount = allRegs.filter(r => r.shift.toLowerCase() === shiftLower && r.status !== 'rejected').length;
+    let maxCapacity = 30;
+    if (shiftLower === "morning") maxCapacity = settings.morningShiftCapacity !== undefined ? Number(settings.morningShiftCapacity) : 30;
+    if (shiftLower === "afternoon") maxCapacity = settings.afternoonShiftCapacity !== undefined ? Number(settings.afternoonShiftCapacity) : 30;
+    if (shiftLower === "night") maxCapacity = settings.nightShiftCapacity !== undefined ? Number(settings.nightShiftCapacity) : 30;
+
+    if (currentShiftCount >= maxCapacity) {
+      return NextResponse.json({ success: false, error: `Sorry, the ${shift} shift is fully booked (capacity: ${maxCapacity} seats).` }, { status: 400 });
+    }
+
     const expectedCbeHolder = settings.cbeAccountHolder || "Biruk Tigistu Lugaba";
     const expectedTeleHolder = settings.telebirrAccountHolder || "Kibrom Haileselassie Abreha";
 

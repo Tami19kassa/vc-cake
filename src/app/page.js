@@ -47,6 +47,8 @@ export default function Home() {
 
   const [articles, setArticles] = useState([]);
   const [testimonies, setTestimonies] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [shiftCounts, setShiftCounts] = useState({ morning: 0, afternoon: 0, night: 0 });
   const [registerOpen, setRegisterOpen] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState("morning");
@@ -63,6 +65,15 @@ export default function Home() {
       const settingsData = await settingsRes.json();
       if (settingsData.success && settingsData.settings) {
         setHeroSettings(settingsData.settings);
+        if (settingsData.shiftCounts) {
+          setShiftCounts(settingsData.shiftCounts);
+        }
+      }
+
+      const prodRes = await fetch("/api/products?active=true");
+      const prodData = await prodRes.json();
+      if (prodData.success) {
+        setProducts(prodData.products);
       }
 
       const articlesRes = await fetch("/api/articles");
@@ -147,7 +158,7 @@ export default function Home() {
       <div className="aurora-glow top-[80%] left-[10%]" />
 
       <div className="relative z-10 w-full min-h-screen">
-        <Navbar />
+        <Navbar settings={heroSettings} />
         
         {/* Section 1: Hero Section (CraveLane Full-Screen Poster) */}
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden p-0 border-b border-[#4a2c11]/10 bg-[#fdfbf7]">
@@ -229,7 +240,7 @@ export default function Home() {
               <div className="lg:hidden border-t border-[#4a2c11]/10 pt-6 flex flex-wrap gap-4 text-[#5c4638] text-xs justify-center">
                 <div className="flex items-center gap-2">
                   <Phone size={14} className="text-[#c5a059]" />
-                  <span className="font-semibold">098 979 4444</span>
+                  <span className="font-semibold">{heroSettings.contactPhone1 || "098 979 4444"}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <svg className="w-3.5 h-3.5 text-[#c5a059]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -282,7 +293,7 @@ export default function Home() {
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-2">
                     <Phone size={14} className="text-[#c5a059]" />
-                    <span className="font-semibold">098 979 4444</span>
+                    <span className="font-semibold">{heroSettings.contactPhone1 || "098 979 4444"}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <svg className="w-3.5 h-3.5 text-[#c5a059]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -346,38 +357,65 @@ export default function Home() {
                     shift: "night",
                     badge: t.pastryBusiness
                   }
-                ].map((s, i) => (
-                  <div key={i} className="bento-card bg-[#fdfbf7] border-[#4a2c11]/15 hover:border-[#4a2c11]/45 flex flex-col justify-between min-h-[280px]">
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-start">
-                        <span className="bg-[#4a2c11]/10 border border-[#4a2c11]/25 text-[#4a2c11] text-[9px] font-bold uppercase px-2 py-0.5 rounded-full">
-                          {s.badge}
-                        </span>
-                        <span className="text-[10px] text-[#8c7366] font-mono flex items-center gap-1">
-                          <Clock size={12} /> {s.time}
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <h3 className="font-serif text-xl font-bold text-[#2c1d11]">{s.title}</h3>
-                        <p className="text-xs text-[#5c4638] leading-relaxed">{s.desc}</p>
-                      </div>
-                    </div>
+                ].map((s, i) => {
+                  const currentCount = shiftCounts[s.shift] || 0;
+                  const capacity = s.shift === "morning" ? heroSettings.morningShiftCapacity || 30 :
+                                   s.shift === "afternoon" ? heroSettings.afternoonShiftCapacity || 30 :
+                                   heroSettings.nightShiftCapacity || 30;
+                  const seatsLeft = Math.max(0, capacity - currentCount);
+                  const isFull = seatsLeft <= 0;
+                  
+                  const isShiftOpen = (heroSettings.coursesEnabled !== false && heroSettings.coursesEnabled !== 0 && 
+                    (s.shift === "morning" ? heroSettings.morningShiftEnabled !== false && heroSettings.morningShiftEnabled !== 0 :
+                     s.shift === "afternoon" ? heroSettings.afternoonShiftEnabled !== false && heroSettings.afternoonShiftEnabled !== 0 :
+                     heroSettings.nightShiftEnabled !== false && heroSettings.nightShiftEnabled !== 0) &&
+                    !isFull);
 
-                    <div className="border-t border-[#4a2c11]/10 pt-4 flex justify-between items-center mt-6">
-                      <div>
-                        <span className="block text-xs font-bold text-[#4a2c11]">2,500 ETB</span>
-                        <span className="block text-[9px] text-[#8c7366]">/ {t.month}</span>
+                  return (
+                    <div key={i} className="bento-card bg-[#fdfbf7] border-[#4a2c11]/15 hover:border-[#4a2c11]/45 flex flex-col justify-between min-h-[280px]">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start">
+                          <span className="bg-[#4a2c11]/10 border border-[#4a2c11]/25 text-[#4a2c11] text-[9px] font-bold uppercase px-2 py-0.5 rounded-full">
+                            {s.badge}
+                          </span>
+                          <span className="text-[10px] text-[#8c7366] font-mono flex items-center gap-1">
+                            <Clock size={12} /> {s.time}
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <h3 className="font-serif text-xl font-bold text-[#2c1d11]">{s.title}</h3>
+                          <p className="text-xs text-[#5c4638] leading-relaxed">{s.desc}</p>
+                        </div>
                       </div>
-                      <ShinyButton
-                        onClick={() => openRegisterWithShift(s.shift)}
-                        className="py-2 px-5 text-[10px]"
-                      >
-                        {t.registerBtn}
-                      </ShinyButton>
+
+                      <div className="border-t border-[#4a2c11]/10 pt-4 flex justify-between items-center mt-6">
+                        <div>
+                          <span className="block text-xs font-bold text-[#4a2c11]">{Number(heroSettings.coursePrice || 2500).toLocaleString()} ETB</span>
+                          <span className="block text-[9px] text-[#8c7366]">/ {t.month}</span>
+                          <span className="block text-[9px] text-[#8c7366] mt-1 font-semibold">
+                            {seatsLeft > 0 ? `${seatsLeft} seats left` : "Fully Booked"}
+                          </span>
+                        </div>
+                        {isShiftOpen ? (
+                          <ShinyButton
+                            onClick={() => openRegisterWithShift(s.shift)}
+                            className="py-2 px-5 text-[10px]"
+                          >
+                            {t.registerBtn}
+                          </ShinyButton>
+                        ) : (
+                          <button
+                            disabled
+                            className="py-2 px-5 text-[10px] bg-red-950/20 border border-red-500/30 text-red-400 rounded-full font-semibold opacity-75 select-none"
+                          >
+                            {isFull ? "Fully Booked" : "Closed"}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </section>
@@ -398,44 +436,41 @@ export default function Home() {
               </div>
 
               {/* Bento Image Catalog Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {[
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {(products.length > 0 ? products : [
                   {
-                    title: t.weddingCakes,
-                    desc: t.weddingDesc,
-                    img: "https://images.unsplash.com/photo-1535141192574-5d4897c13636?q=80&w=400&auto=format&fit=crop",
-                    span: "md:col-span-2"
+                    name: t.weddingCakes,
+                    category: "Cakes",
+                    basePrice: 800,
+                    image: "https://images.unsplash.com/photo-1535141192574-5d4897c13636?q=80&w=400&auto=format&fit=crop"
                   },
                   {
-                    title: t.birthdayCakes,
-                    desc: t.birthdayDesc,
-                    img: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=400&auto=format&fit=crop",
-                    span: "md:col-span-2"
+                    name: t.birthdayCakes,
+                    category: "Cakes",
+                    basePrice: 800,
+                    image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=400&auto=format&fit=crop"
                   },
                   {
-                    title: t.pastries,
-                    desc: t.pastriesDesc,
-                    img: "https://images.unsplash.com/photo-1587314168485-3236d6710814?q=80&w=400&auto=format&fit=crop",
-                    span: "md:col-span-2"
-                  },
-                  {
-                    title: t.rolls,
-                    desc: t.rollsDesc,
-                    img: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?q=80&w=400&auto=format&fit=crop",
-                    span: "md:col-span-2"
+                    name: "Celebration Cakes",
+                    category: "Cakes",
+                    basePrice: 800,
+                    image: "https://images.unsplash.com/photo-1587314168485-3236d6710814?q=80&w=400&auto=format&fit=crop"
                   }
-                ].map((cake, i) => (
-                  <div key={i} className={`bento-card p-0 rounded-2xl overflow-hidden group relative min-h-[220px] ${cake.span}`}>
+                ]).map((cake, i) => (
+                  <div key={i} className="bento-card p-0 rounded-2xl overflow-hidden group relative min-h-[260px]">
                     <img
-                      src={cake.img}
-                      alt={cake.title}
+                      src={cake.image || "https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=600&auto=format&fit=crop"}
+                      alt={cake.name}
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
                     
                     <div className="absolute bottom-0 left-0 right-0 p-6 space-y-2">
-                      <h3 className="font-serif text-xl font-bold text-white">{cake.title}</h3>
-                      <p className="text-xs text-[#c9bfbc] leading-relaxed max-w-md">{cake.desc}</p>
+                      <span className="bg-[#d4af37]/20 border border-[#d4af37]/35 text-[#d4af37] text-[9px] font-bold uppercase px-2 py-0.5 rounded-full inline-block">
+                        {cake.category}
+                      </span>
+                      <h3 className="font-serif text-xl font-bold text-white">{cake.name}</h3>
+                      <p className="text-xs text-[#c9bfbc] font-mono">Starting at {Number(cake.basePrice).toLocaleString()} ETB</p>
                     </div>
                   </div>
                 ))}
@@ -624,7 +659,7 @@ export default function Home() {
           </section>
         </ScrollReveal>
 
-        <Footer />
+        <Footer settings={heroSettings} />
       </div>
 
       {/* Course Registration Modal */}
@@ -633,6 +668,8 @@ export default function Home() {
         onClose={() => setRegisterOpen(false)}
         lang={lang}
         settings={heroSettings}
+        selectedShift={selectedShift}
+        shiftCounts={shiftCounts}
       />
 
       {/* Cake Order Modal */}

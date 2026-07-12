@@ -158,8 +158,35 @@ const seedInitialData = async (store) => {
         subtitle: SEED_HERO.subtitle,
         ctaText: SEED_HERO.ctaText,
         imageUrl: 'https://images.unsplash.com/photo-1581299894007-aaa50297cf16?q=80&w=800&auto=format&fit=crop',
+        cbeAccountNo: '1000444555666',
+        cbeAccountHolder: 'Biruk Tigistu Lugaba',
+        telebirrPhone: '251911378448',
+        telebirrAccountHolder: 'Kibrom Haileselassie Abreha',
+        contactPhone1: '098 979 4444',
+        contactPhone2: '093 480 2222',
+        contactEmail: 'info@vccakeacademy.com',
+        contactAddressEn: 'Bole, Addis Ababa',
+        contactAddressAm: 'ቦሌ፣ አዲስ አበባ',
+        coursePrice: 2500,
+        layerPrice: 300,
+        coursesEnabled: true,
+        ordersEnabled: true,
+        morningShiftEnabled: true,
+        afternoonShiftEnabled: true,
+        nightShiftEnabled: true,
         updatedAt: new Date().toISOString()
       }
+    ];
+  }
+
+  // Seed products
+  if (!store.products || store.products.length === 0) {
+    store.products = [
+      { id: 1, name: "Wedding Cake", category: "Cakes", basePrice: 800, image: "", isEnabled: true, createdAt: new Date().toISOString() },
+      { id: 2, name: "Birthday Cake", category: "Cakes", basePrice: 800, image: "", isEnabled: true, createdAt: new Date().toISOString() },
+      { id: 3, name: "Celebration Cake", category: "Cakes", basePrice: 800, image: "", isEnabled: true, createdAt: new Date().toISOString() },
+      { id: 4, name: "Baby Shower Cake", category: "Cakes", basePrice: 800, image: "", isEnabled: true, createdAt: new Date().toISOString() },
+      { id: 5, name: "Custom Cupcakes", category: "Cupcakes", basePrice: 600, image: "", isEnabled: true, createdAt: new Date().toISOString() }
     ];
   }
 
@@ -225,11 +252,39 @@ const initJsonDB = async () => {
       const store = JSON.parse(data);
       let updated = false;
       
-      const keys = ['admins', 'hero_settings', 'articles', 'testimonies', 'cbe_mock_transactions', 'course_registrations', 'cake_orders', 'contact_messages'];
+      const keys = ['admins', 'hero_settings', 'articles', 'testimonies', 'cbe_mock_transactions', 'course_registrations', 'cake_orders', 'contact_messages', 'products'];
       for (const key of keys) {
         if (!store[key]) {
           store[key] = [];
           updated = true;
+        }
+      }
+
+      if (store.hero_settings && store.hero_settings[0]) {
+        const hs = store.hero_settings[0];
+        if (hs.contactPhone1 === undefined) { hs.contactPhone1 = '098 979 4444'; updated = true; }
+        if (hs.contactPhone2 === undefined) { hs.contactPhone2 = '093 480 2222'; updated = true; }
+        if (hs.contactEmail === undefined) { hs.contactEmail = 'info@vccakeacademy.com'; updated = true; }
+        if (hs.contactAddressEn === undefined) { hs.contactAddressEn = 'Bole, Addis Ababa'; updated = true; }
+        if (hs.contactAddressAm === undefined) { hs.contactAddressAm = 'ቦሌ፣ አዲስ አበባ'; updated = true; }
+        if (hs.coursePrice === undefined) { hs.coursePrice = 2500; updated = true; }
+        if (hs.layerPrice === undefined) { hs.layerPrice = 300; updated = true; }
+        if (hs.coursesEnabled === undefined) { hs.coursesEnabled = true; updated = true; }
+        if (hs.ordersEnabled === undefined) { hs.ordersEnabled = true; updated = true; }
+        if (hs.morningShiftEnabled === undefined) { hs.morningShiftEnabled = true; updated = true; }
+        if (hs.afternoonShiftEnabled === undefined) { hs.afternoonShiftEnabled = true; updated = true; }
+        if (hs.nightShiftEnabled === undefined) { hs.nightShiftEnabled = true; updated = true; }
+        if (hs.morningShiftCapacity === undefined) { hs.morningShiftCapacity = 30; updated = true; }
+        if (hs.afternoonShiftCapacity === undefined) { hs.afternoonShiftCapacity = 30; updated = true; }
+        if (hs.nightShiftCapacity === undefined) { hs.nightShiftCapacity = 30; updated = true; }
+      }
+      
+      if (store.products && store.products.length > 0) {
+        for (const p of store.products) {
+          if (p.stock === undefined) {
+            p.stock = 10;
+            updated = true;
+          }
         }
       }
       
@@ -352,6 +407,67 @@ export const initDB = async () => {
     try {
       await connection.query(`ALTER TABLE hero_settings ADD COLUMN telebirrAccountHolder VARCHAR(255) DEFAULT 'Kibrom Haileselassie Abreha'`);
     } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN contactPhone1 VARCHAR(255) DEFAULT '098 979 4444'`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN contactPhone2 VARCHAR(255) DEFAULT '093 480 2222'`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN contactEmail VARCHAR(255) DEFAULT 'info@vccakeacademy.com'`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN contactAddressEn VARCHAR(255) DEFAULT 'Bole, Addis Ababa'`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN contactAddressAm VARCHAR(255) DEFAULT 'ቦሌ፣ አዲስ አበባ'`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN coursePrice DOUBLE DEFAULT 2500`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN layerPrice DOUBLE DEFAULT 300`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN coursesEnabled BOOLEAN DEFAULT TRUE`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN ordersEnabled BOOLEAN DEFAULT TRUE`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN morningShiftEnabled BOOLEAN DEFAULT TRUE`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN afternoonShiftEnabled BOOLEAN DEFAULT TRUE`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN nightShiftEnabled BOOLEAN DEFAULT TRUE`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN morningShiftCapacity INT DEFAULT 30`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN afternoonShiftCapacity INT DEFAULT 30`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN nightShiftCapacity INT DEFAULT 30`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE products ADD COLUMN stock INT DEFAULT 10`);
+    } catch (e) {}
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        category VARCHAR(255) NOT NULL,
+        basePrice DOUBLE NOT NULL,
+        image TEXT,
+        stock INT DEFAULT 10,
+        isEnabled BOOLEAN DEFAULT TRUE,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS course_registrations (
@@ -440,10 +556,36 @@ export const initDB = async () => {
     const [hero] = await connection.query('SELECT * FROM hero_settings LIMIT 1');
     if (hero.length === 0) {
       await connection.query(
-        'INSERT INTO hero_settings (id, title, subtitle, ctaText, imageUrl) VALUES (1, ?, ?, ?, ?)',
-        [SEED_HERO.title, SEED_HERO.subtitle, SEED_HERO.ctaText, 'https://images.unsplash.com/photo-1581299894007-aaa50297cf16?q=80&w=800&auto=format&fit=crop']
+        `INSERT INTO hero_settings (
+          id, title, subtitle, ctaText, imageUrl, 
+          contactPhone1, contactPhone2, contactEmail, contactAddressEn, contactAddressAm, 
+          coursePrice, layerPrice, coursesEnabled, ordersEnabled, 
+          morningShiftEnabled, afternoonShiftEnabled, nightShiftEnabled,
+          morningShiftCapacity, afternoonShiftCapacity, nightShiftCapacity
+        ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 30, 30, 30)`,
+        [
+          SEED_HERO.title, SEED_HERO.subtitle, SEED_HERO.ctaText,
+          'https://images.unsplash.com/photo-1581299894007-aaa50297cf16?q=80&w=800&auto=format&fit=crop',
+          '098 979 4444', '093 480 2222', 'info@vccakeacademy.com', 'Bole, Addis Ababa', 'ቦሌ፣ አዲስ አበባ',
+          2500, 300, true, true, true, true, true
+        ]
       );
       console.log('Seeded MySQL Hero Settings');
+    }
+
+    const [prodCheck] = await connection.query('SELECT * FROM products LIMIT 1');
+    if (prodCheck.length === 0) {
+      const defaultProds = [
+        ["Wedding Cake", "Cakes", 800, "", 10],
+        ["Birthday Cake", "Cakes", 800, "", 15],
+        ["Celebration Cake", "Cakes", 800, "", 20],
+        ["Baby Shower Cake", "Cakes", 800, "", 10],
+        ["Custom Cupcakes", "Cupcakes", 600, "", 30]
+      ];
+      for (const p of defaultProds) {
+        await connection.query('INSERT INTO products (name, category, basePrice, image, stock, isEnabled) VALUES (?, ?, ?, ?, ?, 1)', p);
+      }
+      console.log('Seeded MySQL Products');
     }
 
     const [articles] = await connection.query('SELECT * FROM articles LIMIT 1');
@@ -500,45 +642,21 @@ export const db = {
     return rows[0] || null;
   },
 
-  async updateHeroSettings(title, subtitle, ctaText, imageUrl, cbeAccountNo, cbeAccountHolder, telebirrPhone, telebirrAccountHolder) {
+  async updateHeroSettings(
+    title, subtitle, ctaText, imageUrl, 
+    cbeAccountNo, cbeAccountHolder, telebirrPhone, telebirrAccountHolder,
+    contactPhone1, contactPhone2, contactEmail, contactAddressEn, contactAddressAm,
+    coursePrice, layerPrice, coursesEnabled, ordersEnabled,
+    morningShiftEnabled, afternoonShiftEnabled, nightShiftEnabled,
+    morningShiftCapacity, afternoonShiftCapacity, nightShiftCapacity
+  ) {
     const config = getDBConfig();
     const cbeAcc = cbeAccountNo || '1000444555666';
     const cbeHolder = cbeAccountHolder || 'Biruk Tigistu Lugaba';
     const telePhone = telebirrPhone || '251911378448';
     const teleHolder = telebirrAccountHolder || 'Kibrom Haileselassie Abreha';
-
-    if (config.type === 'json') {
-      return await jsonQuery('hero_settings', 'update', {
-        id: 1,
-        fields: {
-          title,
-          subtitle,
-          ctaText,
-          imageUrl,
-          cbeAccountNo: cbeAcc,
-          cbeAccountHolder: cbeHolder,
-          telebirrPhone: telePhone,
-          telebirrAccountHolder: teleHolder
-        }
-      });
-    }
-    const myPool = getPool();
-    await myPool.query(
-      `INSERT INTO hero_settings (id, title, subtitle, ctaText, imageUrl, cbeAccountNo, cbeAccountHolder, telebirrPhone, telebirrAccountHolder) 
-       VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?) 
-       ON DUPLICATE KEY UPDATE 
-         title = VALUES(title), 
-         subtitle = VALUES(subtitle), 
-         ctaText = VALUES(ctaText), 
-         imageUrl = VALUES(imageUrl),
-         cbeAccountNo = VALUES(cbeAccountNo),
-         cbeAccountHolder = VALUES(cbeAccountHolder),
-         telebirrPhone = VALUES(telebirrPhone),
-         telebirrAccountHolder = VALUES(telebirrAccountHolder)`,
-      [title, subtitle, ctaText, imageUrl, cbeAcc, cbeHolder, telePhone, teleHolder]
-    );
-    return {
-      id: 1,
+ 
+    const fields = {
       title,
       subtitle,
       ctaText,
@@ -546,9 +664,74 @@ export const db = {
       cbeAccountNo: cbeAcc,
       cbeAccountHolder: cbeHolder,
       telebirrPhone: telePhone,
-      telebirrAccountHolder: teleHolder
+      telebirrAccountHolder: teleHolder,
+      contactPhone1: contactPhone1 || '098 979 4444',
+      contactPhone2: contactPhone2 || '093 480 2222',
+      contactEmail: contactEmail || 'info@vccakeacademy.com',
+      contactAddressEn: contactAddressEn || 'Bole, Addis Ababa',
+      contactAddressAm: contactAddressAm || 'ቦሌ፣ አዲስ አበባ',
+      coursePrice: coursePrice !== undefined ? Number(coursePrice) : 2500,
+      layerPrice: layerPrice !== undefined ? Number(layerPrice) : 300,
+      coursesEnabled: coursesEnabled !== undefined ? Boolean(coursesEnabled) : true,
+      ordersEnabled: ordersEnabled !== undefined ? Boolean(ordersEnabled) : true,
+      morningShiftEnabled: morningShiftEnabled !== undefined ? Boolean(morningShiftEnabled) : true,
+      afternoonShiftEnabled: afternoonShiftEnabled !== undefined ? Boolean(afternoonShiftEnabled) : true,
+      nightShiftEnabled: nightShiftEnabled !== undefined ? Boolean(nightShiftEnabled) : true,
+      morningShiftCapacity: morningShiftCapacity !== undefined ? Number(morningShiftCapacity) : 30,
+      afternoonShiftCapacity: afternoonShiftCapacity !== undefined ? Number(afternoonShiftCapacity) : 30,
+      nightShiftCapacity: nightShiftCapacity !== undefined ? Number(nightShiftCapacity) : 30
     };
+ 
+    if (config.type === 'json') {
+      return await jsonQuery('hero_settings', 'update', {
+        id: 1,
+        fields
+      });
+    }
+ 
+    const myPool = getPool();
+    await myPool.query(
+      `INSERT INTO hero_settings (
+        id, title, subtitle, ctaText, imageUrl, cbeAccountNo, cbeAccountHolder, telebirrPhone, telebirrAccountHolder,
+        contactPhone1, contactPhone2, contactEmail, contactAddressEn, contactAddressAm,
+        coursePrice, layerPrice, coursesEnabled, ordersEnabled, morningShiftEnabled, afternoonShiftEnabled, nightShiftEnabled,
+        morningShiftCapacity, afternoonShiftCapacity, nightShiftCapacity
+      ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+      ON DUPLICATE KEY UPDATE 
+        title = VALUES(title), 
+        subtitle = VALUES(subtitle), 
+        ctaText = VALUES(ctaText), 
+        imageUrl = VALUES(imageUrl),
+        cbeAccountNo = VALUES(cbeAccountNo),
+        cbeAccountHolder = VALUES(cbeAccountHolder),
+        telebirrPhone = VALUES(telebirrPhone),
+        telebirrAccountHolder = VALUES(telebirrAccountHolder),
+        contactPhone1 = VALUES(contactPhone1),
+        contactPhone2 = VALUES(contactPhone2),
+        contactEmail = VALUES(contactEmail),
+        contactAddressEn = VALUES(contactAddressEn),
+        contactAddressAm = VALUES(contactAddressAm),
+        coursePrice = VALUES(coursePrice),
+        layerPrice = VALUES(layerPrice),
+        coursesEnabled = VALUES(coursesEnabled),
+        ordersEnabled = VALUES(ordersEnabled),
+        morningShiftEnabled = VALUES(morningShiftEnabled),
+        afternoonShiftEnabled = VALUES(afternoonShiftEnabled),
+        nightShiftEnabled = VALUES(nightShiftEnabled),
+        morningShiftCapacity = VALUES(morningShiftCapacity),
+        afternoonShiftCapacity = VALUES(afternoonShiftCapacity),
+        nightShiftCapacity = VALUES(nightShiftCapacity)`,
+      [
+        title, subtitle, ctaText, imageUrl, cbeAcc, cbeHolder, telePhone, teleHolder,
+        fields.contactPhone1, fields.contactPhone2, fields.contactEmail, fields.contactAddressEn, fields.contactAddressAm,
+        fields.coursePrice, fields.layerPrice, fields.coursesEnabled, fields.ordersEnabled,
+        fields.morningShiftEnabled, fields.afternoonShiftEnabled, fields.nightShiftEnabled,
+        fields.morningShiftCapacity, fields.afternoonShiftCapacity, fields.nightShiftCapacity
+      ]
+    );
+    return { id: 1, ...fields };
   },
+
 
   // Admin Account
   async getAdminByUsername(username) {
@@ -915,6 +1098,86 @@ export const db = {
     }
     const myPool = getPool();
     await myPool.query('UPDATE cbe_mock_transactions SET isClaimed = 1 WHERE referenceId = ?', [ref]);
+    return true;
+  },
+
+  // Products / Catalog Items
+  async getProducts() {
+    const config = getDBConfig();
+    if (config.type === 'json') {
+      const list = await jsonQuery('products', 'select_all');
+      return [...list].sort((a, b) => a.id - b.id);
+    }
+    const myPool = getPool();
+    const [rows] = await myPool.query('SELECT * FROM products ORDER BY id ASC');
+    return rows;
+  },
+
+  async getProductById(id) {
+    const config = getDBConfig();
+    if (config.type === 'json') {
+      const list = await jsonQuery('products', 'select_all');
+      return list.find(item => item.id === Number(id));
+    }
+    const myPool = getPool();
+    const [rows] = await myPool.query('SELECT * FROM products WHERE id = ?', [id]);
+    return rows[0] || null;
+  },
+
+  async createProduct(data) {
+    const config = getDBConfig();
+    const prodData = {
+      name: data.name,
+      category: data.category,
+      basePrice: Number(data.basePrice),
+      image: data.image || '',
+      stock: data.stock !== undefined ? Number(data.stock) : 10,
+      isEnabled: data.isEnabled !== undefined ? Boolean(data.isEnabled) : true
+    };
+
+    if (config.type === 'json') {
+      return await jsonQuery('products', 'insert', prodData);
+    }
+    const myPool = getPool();
+    const [result] = await myPool.query(
+      'INSERT INTO products (name, category, basePrice, image, stock, isEnabled) VALUES (?, ?, ?, ?, ?, ?)',
+      [prodData.name, prodData.category, prodData.basePrice, prodData.image, prodData.stock, prodData.isEnabled ? 1 : 0]
+    );
+    return { id: result.insertId, ...prodData };
+  },
+
+  async updateProduct(id, data) {
+    const config = getDBConfig();
+    const fields = {};
+    if (data.name !== undefined) fields.name = data.name;
+    if (data.category !== undefined) fields.category = data.category;
+    if (data.basePrice !== undefined) fields.basePrice = Number(data.basePrice);
+    if (data.image !== undefined) fields.image = data.image;
+    if (data.stock !== undefined) fields.stock = Number(data.stock);
+    if (data.isEnabled !== undefined) fields.isEnabled = Boolean(data.isEnabled);
+
+    if (config.type === 'json') {
+      return await jsonQuery('products', 'update', { id, fields });
+    }
+    const myPool = getPool();
+    const keys = Object.keys(fields);
+    const values = Object.values(fields);
+    if (keys.length === 0) return { id };
+
+    const setClause = keys.map(k => `${k} = ?`).join(', ');
+    values.push(id);
+
+    await myPool.query(`UPDATE products SET ${setClause} WHERE id = ?`, values);
+    return { id, ...fields };
+  },
+
+  async deleteProduct(id) {
+    const config = getDBConfig();
+    if (config.type === 'json') {
+      return await jsonQuery('products', 'delete', id);
+    }
+    const myPool = getPool();
+    await myPool.query('DELETE FROM products WHERE id = ?', [id]);
     return true;
   }
 };

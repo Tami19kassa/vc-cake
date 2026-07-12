@@ -5,7 +5,7 @@ import { X, CheckCircle, AlertCircle, Landmark } from "lucide-react";
 import { translations } from "@/lib/translations";
 import { ShinyButton } from "@/components/ShinyButton";
 
-export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, settings }) {
+export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, settings, selectedShift, shiftCounts }) {
   const [lang, setLang] = useState("en");
   const [form, setForm] = useState({
     studentName: "",
@@ -26,6 +26,26 @@ export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, s
       setLang(propLang || localStorage.getItem("lang") || "en");
     }
   }, [propLang, isOpen]);
+
+  // Sync tuition price and shifts
+  useEffect(() => {
+    if (isOpen && settings) {
+      const price = settings.coursePrice || 2500;
+      setForm(f => ({ ...f, amountPaid: String(price) }));
+
+      if (selectedShift) {
+        setForm(f => ({ ...f, shift: selectedShift }));
+      } else {
+        if (settings.morningShiftEnabled !== false && settings.morningShiftEnabled !== 0) {
+          setForm(f => ({ ...f, shift: "morning" }));
+        } else if (settings.afternoonShiftEnabled !== false && settings.afternoonShiftEnabled !== 0) {
+          setForm(f => ({ ...f, shift: "afternoon" }));
+        } else if (settings.nightShiftEnabled !== false && settings.nightShiftEnabled !== 0) {
+          setForm(f => ({ ...f, shift: "night" }));
+        }
+      }
+    }
+  }, [settings, isOpen, selectedShift]);
 
   // Auto-trigger print when success becomes available
   useEffect(() => {
@@ -226,6 +246,19 @@ export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, s
               </button>
             </div>
           </div>
+        ) : (settings?.coursesEnabled === false || settings?.coursesEnabled === 0) ? (
+          <div className="text-center py-12 space-y-4">
+            <div className="w-12 h-12 bg-red-500/10 text-red-400 rounded-full flex items-center justify-center mx-auto border border-red-500/25 animate-pulse">
+              <AlertCircle size={24} />
+            </div>
+            <h3 className="font-serif text-lg font-bold text-white">Course Registrations Closed</h3>
+            <p className="text-xs text-[#c9bfbc] max-w-sm mx-auto leading-relaxed">
+              Course registrations are temporarily closed. Please check back later or contact us directly at our phone numbers.
+            </p>
+            <button onClick={onClose} className="border border-white/10 hover:border-white/20 text-[#c9bfbc] px-6 py-2 rounded text-xs cursor-pointer">
+              {t.closeBtn}
+            </button>
+          </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 text-sm">
             {error && (
@@ -263,7 +296,7 @@ export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, s
                   </div>
                   <div>
                     <span className="text-[#8c7e7a] block">Registration Fee:</span>
-                    <span className="text-[#d4af37] block font-bold">2,500.00 ETB</span>
+                    <span className="text-[#d4af37] block font-bold">{Number(settings?.coursePrice || 2500).toLocaleString()} ETB</span>
                   </div>
                 </div>
               ) : (
@@ -282,7 +315,7 @@ export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, s
                   </div>
                   <div>
                     <span className="text-[#8c7e7a] block">Registration Fee:</span>
-                    <span className="text-[#d4af37] block font-bold">2,500.00 ETB</span>
+                    <span className="text-[#d4af37] block font-bold">{Number(settings?.coursePrice || 2500).toLocaleString()} ETB</span>
                   </div>
                 </div>
               )}
@@ -332,16 +365,45 @@ export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, s
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">{t.selectShiftLabel}</label>
-                <select
-                  name="shift"
-                  value={form.shift}
-                  onChange={handleChange}
-                  className="input-field bg-[#0c0706] cursor-pointer"
-                >
-                  <option value="morning">{lang === "en" ? "Morning Shift (9 AM - 12 PM)" : "የጠዋት ፈረቃ (ከጠዋቱ 3 - 6 ሰዓት)"}</option>
-                  <option value="afternoon">{lang === "en" ? "Afternoon Shift (2 PM - 5 PM)" : "ከሰዓት በኋላ ፈረቃ (ከከሰዓት 8 - 11 ሰዓት)"}</option>
-                  <option value="night">{lang === "en" ? "Night Shift (6 PM - 9 PM)" : "የማታ ፈረቃ (ከምሽቱ 12 - 3 ሰዓት)"}</option>
-                </select>
+                {(() => {
+                  const getShiftStatus = (shiftKey, capacityField, labelEn, labelAm) => {
+                    const isClosed = settings?.[`${shiftKey}ShiftEnabled`] === false || settings?.[`${shiftKey}ShiftEnabled`] === 0;
+                    const currentCount = shiftCounts?.[shiftKey] || 0;
+                    const capacity = settings?.[capacityField] || 30;
+                    const isFull = currentCount >= capacity;
+                    
+                    let suffix = "";
+                    if (isClosed) suffix = lang === "en" ? " (Closed)" : " (የተዘጋ)";
+                    else if (isFull) suffix = lang === "en" ? " (Full)" : " (የተሞላ)";
+                    else {
+                      const left = capacity - currentCount;
+                      suffix = ` (${left} ${lang === "en" ? "left" : "ቀሪ"})`;
+                    }
+
+                    const label = lang === "en" ? labelEn : labelAm;
+                    return {
+                      label: `${label}${suffix}`,
+                      disabled: isClosed || isFull
+                    };
+                  };
+
+                  const morningInfo = getShiftStatus("morning", "morningShiftCapacity", "Morning Shift (9 AM - 12 PM)", "የጠዋት ፈረቃ (ከጠዋቱ 3 - 6 ሰዓት)");
+                  const afternoonInfo = getShiftStatus("afternoon", "afternoonShiftCapacity", "Afternoon Shift (2 PM - 5 PM)", "ከሰዓት በኋላ ፈረቃ (ከከሰዓት 8 - 11 ሰዓት)");
+                  const nightInfo = getShiftStatus("night", "nightShiftCapacity", "Night Shift (6 PM - 9 PM)", "የማታ ፈረቃ (ከምሽቱ 12 - 3 ሰዓት)");
+
+                  return (
+                    <select
+                      name="shift"
+                      value={form.shift}
+                      onChange={handleChange}
+                      className="input-field bg-[#0c0706] cursor-pointer"
+                    >
+                      <option value="morning" disabled={morningInfo.disabled}>{morningInfo.label}</option>
+                      <option value="afternoon" disabled={afternoonInfo.disabled}>{afternoonInfo.label}</option>
+                      <option value="night" disabled={nightInfo.disabled}>{nightInfo.label}</option>
+                    </select>
+                  );
+                })()}
               </div>
 
               <div>

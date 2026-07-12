@@ -18,7 +18,8 @@ import {
   Trash2,
   Edit2,
   AlertCircle,
-  QrCode
+  QrCode,
+  Layers
 } from "lucide-react";
 import AdminScannerModal from "@/components/AdminScannerModal";
 
@@ -32,7 +33,7 @@ export default function AdminDashboard() {
   const [data, setData] = useState({ registrations: [], orders: [], contacts: [], mockTransactions: [] });
   const [loading, setLoading] = useState(true);
   
-  // Hero Edit State (bilingual splits)
+  // Hero Edit State (bilingual splits + dynamic configs)
   const [heroForm, setHeroForm] = useState({
     titleEn: "", titleAm: "",
     subtitleEn: "", subtitleAm: "",
@@ -41,7 +42,22 @@ export default function AdminDashboard() {
     cbeAccountNo: "",
     cbeAccountHolder: "",
     telebirrPhone: "",
-    telebirrAccountHolder: ""
+    telebirrAccountHolder: "",
+    contactPhone1: "",
+    contactPhone2: "",
+    contactEmail: "",
+    contactAddressEn: "",
+    contactAddressAm: "",
+    coursePrice: "",
+    layerPrice: "",
+    coursesEnabled: true,
+    ordersEnabled: true,
+    morningShiftEnabled: true,
+    afternoonShiftEnabled: true,
+    nightShiftEnabled: true,
+    morningShiftCapacity: "30",
+    afternoonShiftCapacity: "30",
+    nightShiftCapacity: "30"
   });
   const [scannerOpen, setScannerOpen] = useState(false);
   const [heroLoading, setHeroLoading] = useState(false);
@@ -59,8 +75,31 @@ export default function AdminDashboard() {
   const [artLoading, setArtLoading] = useState(false);
   const [artMsg, setArtMsg] = useState("");
 
-  // Search Filter
+  // Products / Catalog state
+  const [products, setProducts] = useState([]);
+  const [prodForm, setProdForm] = useState({
+    id: null,
+    name: "",
+    category: "Cakes",
+    basePrice: "",
+    image: "",
+    stock: "10",
+    isEnabled: true
+  });
+  const [prodLoading, setProdLoading] = useState(false);
+  const [prodMsg, setProdMsg] = useState("");
+
+  // Filtering & Sorting State
   const [search, setSearch] = useState("");
+  const [regStatusFilter, setRegStatusFilter] = useState("all");
+  const [regShiftFilter, setRegShiftFilter] = useState("all");
+  const [regSort, setRegSort] = useState("date-desc");
+
+  const [orderStatusFilter, setOrderStatusFilter] = useState("all");
+  const [orderCategoryFilter, setOrderCategoryFilter] = useState("all");
+  const [orderSort, setOrderSort] = useState("date-desc");
+  const [orderDeliveryFilter, setOrderDeliveryFilter] = useState("all");
+  const [orderDeliveryCustomDate, setOrderDeliveryCustomDate] = useState("");
 
   // Scraper action feedback
   const [scraperFeedback, setScraperFeedback] = useState({ id: null, type: "", message: "", error: "", loading: false });
@@ -137,8 +176,35 @@ export default function AdminDashboard() {
           cbeAccountNo: resData.settings.cbeAccountNo || "",
           cbeAccountHolder: resData.settings.cbeAccountHolder || "",
           telebirrPhone: resData.settings.telebirrPhone || "",
-          telebirrAccountHolder: resData.settings.telebirrAccountHolder || ""
+          telebirrAccountHolder: resData.settings.telebirrAccountHolder || "",
+          contactPhone1: resData.settings.contactPhone1 || "",
+          contactPhone2: resData.settings.contactPhone2 || "",
+          contactEmail: resData.settings.contactEmail || "",
+          contactAddressEn: resData.settings.contactAddressEn || "",
+          contactAddressAm: resData.settings.contactAddressAm || "",
+          coursePrice: resData.settings.coursePrice !== undefined ? String(resData.settings.coursePrice) : "",
+          layerPrice: resData.settings.layerPrice !== undefined ? String(resData.settings.layerPrice) : "",
+          coursesEnabled: resData.settings.coursesEnabled !== false && resData.settings.coursesEnabled !== 0,
+          ordersEnabled: resData.settings.ordersEnabled !== false && resData.settings.ordersEnabled !== 0,
+          morningShiftEnabled: resData.settings.morningShiftEnabled !== false && resData.settings.morningShiftEnabled !== 0,
+          afternoonShiftEnabled: resData.settings.afternoonShiftEnabled !== false && resData.settings.afternoonShiftEnabled !== 0,
+          nightShiftEnabled: resData.settings.nightShiftEnabled !== false && resData.settings.nightShiftEnabled !== 0,
+          morningShiftCapacity: resData.settings.morningShiftCapacity !== undefined ? String(resData.settings.morningShiftCapacity) : "30",
+          afternoonShiftCapacity: resData.settings.afternoonShiftCapacity !== undefined ? String(resData.settings.afternoonShiftCapacity) : "30",
+          nightShiftCapacity: resData.settings.nightShiftCapacity !== undefined ? String(resData.settings.nightShiftCapacity) : "30"
         });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch("/api/products");
+      const resData = await res.json();
+      if (resData.success) {
+        setProducts(resData.products);
       }
     } catch (e) {
       console.error(e);
@@ -150,6 +216,7 @@ export default function AdminDashboard() {
       fetchDashboardData(token);
       fetchArticles();
       fetchHeroSettings();
+      fetchProducts();
     }
   }, [token]);
 
@@ -240,7 +307,22 @@ export default function AdminDashboard() {
       cbeAccountNo: heroForm.cbeAccountNo,
       cbeAccountHolder: heroForm.cbeAccountHolder,
       telebirrPhone: heroForm.telebirrPhone,
-      telebirrAccountHolder: heroForm.telebirrAccountHolder
+      telebirrAccountHolder: heroForm.telebirrAccountHolder,
+      contactPhone1: heroForm.contactPhone1,
+      contactPhone2: heroForm.contactPhone2,
+      contactEmail: heroForm.contactEmail,
+      contactAddressEn: heroForm.contactAddressEn,
+      contactAddressAm: heroForm.contactAddressAm,
+      coursePrice: heroForm.coursePrice !== "" ? Number(heroForm.coursePrice) : undefined,
+      layerPrice: heroForm.layerPrice !== "" ? Number(heroForm.layerPrice) : undefined,
+      coursesEnabled: heroForm.coursesEnabled,
+      ordersEnabled: heroForm.ordersEnabled,
+      morningShiftEnabled: heroForm.morningShiftEnabled,
+      afternoonShiftEnabled: heroForm.afternoonShiftEnabled,
+      nightShiftEnabled: heroForm.nightShiftEnabled,
+      morningShiftCapacity: heroForm.morningShiftCapacity !== "" ? Number(heroForm.morningShiftCapacity) : 30,
+      afternoonShiftCapacity: heroForm.afternoonShiftCapacity !== "" ? Number(heroForm.afternoonShiftCapacity) : 30,
+      nightShiftCapacity: heroForm.nightShiftCapacity !== "" ? Number(heroForm.nightShiftCapacity) : 30
     };
 
     try {
@@ -351,17 +433,138 @@ export default function AdminDashboard() {
     setArtMsg("Editing article #" + art.id);
   };
 
-  // Filter lists based on search
-  const filteredRegs = data.registrations.filter((r) =>
-    r.studentName.toLowerCase().includes(search.toLowerCase()) ||
-    r.paymentReference.toLowerCase().includes(search.toLowerCase())
-  );
+  // Product Catalog CRUD methods
+  const handleProductSubmit = async (e) => {
+    e.preventDefault();
+    setProdMsg("");
+    setProdLoading(true);
 
-  const filteredOrders = data.orders.filter((o) =>
-    o.customerName.toLowerCase().includes(search.toLowerCase()) ||
-    o.paymentReference.toLowerCase().includes(search.toLowerCase()) ||
-    o.cakeType.toLowerCase().includes(search.toLowerCase())
-  );
+    const isUpdate = prodForm.id !== null;
+    const url = "/api/products";
+    const method = isUpdate ? "PUT" : "POST";
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(prodForm)
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        setProdMsg(resData.message);
+        setProdForm({ id: null, name: "", category: "Cakes", basePrice: "", image: "", stock: "10", isEnabled: true });
+        fetchProducts();
+      } else {
+        setProdMsg("Error: " + resData.error);
+      }
+    } catch (err) {
+      setProdMsg("Failed to process product request.");
+    } finally {
+      setProdLoading(false);
+    }
+  };
+
+  const handleProductToggle = async (prod) => {
+    try {
+      const res = await fetch("/api/products", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id: prod.id,
+          isEnabled: !prod.isEnabled
+        })
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        fetchProducts();
+      }
+    } catch (err) {
+      console.error("Failed to toggle product status:", err);
+    }
+  };
+
+  const handleProductDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this catalog item?")) return;
+    try {
+      const res = await fetch(`/api/products?id=${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        fetchProducts();
+      }
+    } catch (err) {
+      console.error("Failed to delete product:", err);
+    }
+  };
+
+  // Filter lists based on advanced search, status, shift and category filters
+  const filteredRegs = data.registrations
+    .filter((r) => {
+      const matchSearch = r.studentName.toLowerCase().includes(search.toLowerCase()) ||
+                          r.paymentReference.toLowerCase().includes(search.toLowerCase()) ||
+                          r.studentPhone.toLowerCase().includes(search.toLowerCase());
+      const matchStatus = regStatusFilter === "all" || r.status === regStatusFilter;
+      const matchShift = regShiftFilter === "all" || r.shift.toLowerCase() === regShiftFilter;
+      return matchSearch && matchStatus && matchShift;
+    })
+    .sort((a, b) => {
+      if (regSort === "date-desc") return new Date(b.createdAt) - new Date(a.createdAt);
+      if (regSort === "date-asc") return new Date(a.createdAt) - new Date(b.createdAt);
+      if (regSort === "name-asc") return a.studentName.localeCompare(b.studentName);
+      if (regSort === "name-desc") return b.studentName.localeCompare(a.studentName);
+      return 0;
+    });
+
+  const filteredOrders = data.orders
+    .filter((o) => {
+      const matchSearch = o.customerName.toLowerCase().includes(search.toLowerCase()) ||
+                          o.paymentReference.toLowerCase().includes(search.toLowerCase()) ||
+                          o.customerPhone.toLowerCase().includes(search.toLowerCase()) ||
+                          o.cakeType.toLowerCase().includes(search.toLowerCase());
+      const matchStatus = orderStatusFilter === "all" || o.status === orderStatusFilter;
+      const matchCategory = orderCategoryFilter === "all" || o.cakeType.toLowerCase().includes(orderCategoryFilter.toLowerCase());
+      
+      let matchDelivery = true;
+      if (orderDeliveryFilter !== "all") {
+        const todayStr = new Date().toISOString().split("T")[0];
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split("T")[0];
+        const oDateStr = o.deliveryDate;
+
+        if (orderDeliveryFilter === "today") {
+          matchDelivery = oDateStr === todayStr;
+        } else if (orderDeliveryFilter === "tomorrow") {
+          matchDelivery = oDateStr === tomorrowStr;
+        } else if (orderDeliveryFilter === "this-week") {
+          const diffTime = new Date(oDateStr) - new Date(todayStr);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          matchDelivery = diffDays >= 0 && diffDays <= 7;
+        } else if (orderDeliveryFilter === "custom" && orderDeliveryCustomDate) {
+          matchDelivery = oDateStr === orderDeliveryCustomDate;
+        }
+      }
+      return matchSearch && matchStatus && matchCategory && matchDelivery;
+    })
+    .sort((a, b) => {
+      if (orderSort === "date-desc") return new Date(b.createdAt) - new Date(a.createdAt);
+      if (orderSort === "date-asc") return new Date(a.createdAt) - new Date(b.createdAt);
+      if (orderSort === "delivery-asc") return new Date(a.deliveryDate) - new Date(b.deliveryDate);
+      if (orderSort === "delivery-desc") return new Date(b.deliveryDate) - new Date(a.deliveryDate);
+      if (orderSort === "name-asc") return a.customerName.localeCompare(b.customerName);
+      if (orderSort === "name-desc") return b.customerName.localeCompare(a.customerName);
+      return 0;
+    });
 
   return (
     <div className="min-h-screen bg-[#0c0706] text-white flex flex-col font-sans">
@@ -408,6 +611,7 @@ export default function AdminDashboard() {
           {[
             { id: "registrations", label: "Course Registrations", icon: <Users size={16} />, count: data.registrations.length },
             { id: "orders", label: "Celebration Cake Orders", icon: <Cake size={16} />, count: data.orders.length },
+            { id: "products", label: "Manage Catalog", icon: <Layers size={16} />, count: products.length },
             { id: "articles", label: "Vlogs & Blogs", icon: <FileText size={16} />, count: articles.length },
             { id: "settings", label: "Hero Settings", icon: <Settings size={16} /> },
             { id: "contacts", label: "User Inquiries", icon: <MessageSquare size={16} />, count: data.contacts.length }
@@ -461,28 +665,91 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <>
-              {/* Optional Search filter on listings */}
-              {(activeTab === "registrations" || activeTab === "orders") && (
-                <div className="relative max-w-md">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                    <Landmark size={15} />
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Search by student name or CBE reference number..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="input-field pl-10"
-                  />
-                </div>
-              )}
+
 
               {/* TAB 1: COURSE REGISTRATIONS LIST */}
               {activeTab === "registrations" && (
-                <div className="bg-[#120a09] border border-[#d4af37]/10 rounded-lg p-5">
-                  <h3 className="font-serif text-lg font-bold text-[#d4af37] border-b border-[#d4af37]/10 pb-3 mb-4">
-                    Course Registrations List
-                  </h3>
+                <div className="space-y-6">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div className="bg-[#120a09] border border-[#d4af37]/10 p-4 rounded-lg flex flex-col justify-between">
+                      <span className="text-[10px] text-[#8c7e7a] uppercase font-semibold">Total Registered</span>
+                      <span className="text-xl font-bold font-serif text-white mt-1">{data.registrations.length}</span>
+                    </div>
+                    <div className="bg-[#120a09] border border-[#d4af37]/10 p-4 rounded-lg flex flex-col justify-between">
+                      <span className="text-[10px] text-[#8c7e7a] uppercase font-semibold">Approved</span>
+                      <span className="text-xl font-bold font-serif text-[#d4af37] mt-1">
+                        {data.registrations.filter(r => r.status === "approved").length}
+                      </span>
+                    </div>
+                    <div className="bg-[#120a09] border border-[#d4af37]/10 p-4 rounded-lg flex flex-col justify-between">
+                      <span className="text-[10px] text-[#8c7e7a] uppercase font-semibold">Pending</span>
+                      <span className="text-xl font-bold font-serif text-yellow-500/80 mt-1">
+                        {data.registrations.filter(r => r.status === "pending").length}
+                      </span>
+                    </div>
+                    <div className="bg-[#120a09] border border-[#d4af37]/10 p-4 rounded-lg flex flex-col justify-between">
+                      <span className="text-[10px] text-[#8c7e7a] uppercase font-semibold">Total Tuition Revenue</span>
+                      <span className="text-xl font-bold font-serif text-[#d4af37] mt-1">
+                        {data.registrations.filter(r => r.status === "approved").reduce((sum, r) => sum + Number(r.amountPaid), 0).toLocaleString()} ETB
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Search and Filters */}
+                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-[#120a09] border border-[#d4af37]/10 p-4 rounded-lg">
+                    <div className="relative w-full md:flex-1">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                        <Users size={15} />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Search student name, phone, email, or reference number..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="input-field pl-10 w-full"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                      <select
+                        value={regStatusFilter}
+                        onChange={(e) => setRegStatusFilter(e.target.value)}
+                        className="input-field bg-[#0c0706] text-xs cursor-pointer flex-1 md:flex-none"
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="approved">Approved</option>
+                        <option value="pending">Pending</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+
+                      <select
+                        value={regShiftFilter}
+                        onChange={(e) => setRegShiftFilter(e.target.value)}
+                        className="input-field bg-[#0c0706] text-xs cursor-pointer flex-1 md:flex-none"
+                      >
+                        <option value="all">All Shifts</option>
+                        <option value="morning">Morning Shift</option>
+                        <option value="afternoon">Afternoon Shift</option>
+                        <option value="night">Night Shift</option>
+                      </select>
+
+                      <select
+                        value={regSort}
+                        onChange={(e) => setRegSort(e.target.value)}
+                        className="input-field bg-[#0c0706] text-xs cursor-pointer flex-1 md:flex-none"
+                      >
+                        <option value="date-desc">Newest First</option>
+                        <option value="date-asc">Oldest First</option>
+                        <option value="name-asc">Name A-Z</option>
+                        <option value="name-desc">Name Z-A</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#120a09] border border-[#d4af37]/10 rounded-lg p-5">
+                    <h3 className="font-serif text-lg font-bold text-[#d4af37] border-b border-[#d4af37]/10 pb-3 mb-4">
+                      Course Registrations List
+                    </h3>
                   
                   {filteredRegs.length === 0 ? (
                     <div className="text-center text-[#8c7e7a] py-12">No registrations found matching search criteria.</div>
@@ -581,14 +848,114 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </div>
-              )}
+              </div>
+            )}
 
               {/* TAB 2: CELEBRATION CAKE ORDERS LIST */}
               {activeTab === "orders" && (
-                <div className="bg-[#120a09] border border-[#d4af37]/10 rounded-lg p-5">
-                  <h3 className="font-serif text-lg font-bold text-[#d4af37] border-b border-[#d4af37]/10 pb-3 mb-4">
-                    Custom Celebration Cake Orders
-                  </h3>
+                <div className="space-y-6">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div className="bg-[#120a09] border border-[#d4af37]/10 p-4 rounded-lg flex flex-col justify-between">
+                      <span className="text-[10px] text-[#8c7e7a] uppercase font-semibold">Total Orders Made</span>
+                      <span className="text-xl font-bold font-serif text-white mt-1">{data.orders.length}</span>
+                    </div>
+                    <div className="bg-[#120a09] border border-[#d4af37]/10 p-4 rounded-lg flex flex-col justify-between">
+                      <span className="text-[10px] text-[#8c7e7a] uppercase font-semibold">Approved Orders</span>
+                      <span className="text-xl font-bold font-serif text-[#d4af37] mt-1">
+                        {data.orders.filter(o => o.status === "approved").length}
+                      </span>
+                    </div>
+                    <div className="bg-[#120a09] border border-[#d4af37]/10 p-4 rounded-lg flex flex-col justify-between">
+                      <span className="text-[10px] text-[#8c7e7a] uppercase font-semibold">Pending Orders</span>
+                      <span className="text-xl font-bold font-serif text-yellow-500/80 mt-1">
+                        {data.orders.filter(o => o.status === "pending").length}
+                      </span>
+                    </div>
+                    <div className="bg-[#120a09] border border-[#d4af37]/10 p-4 rounded-lg flex flex-col justify-between">
+                      <span className="text-[10px] text-[#8c7e7a] uppercase font-semibold">Total Cake Revenue</span>
+                      <span className="text-xl font-bold font-serif text-[#d4af37] mt-1">
+                        {data.orders.filter(o => o.status === "approved").reduce((sum, o) => sum + Number(o.amountPaid), 0).toLocaleString()} ETB
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Search and Filters */}
+                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-[#120a09] border border-[#d4af37]/10 p-4 rounded-lg">
+                    <div className="relative w-full md:flex-1">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                        <Cake size={15} />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Search customer name, phone, type, or reference number..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="input-field pl-10 w-full"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                      <select
+                        value={orderStatusFilter}
+                        onChange={(e) => setOrderStatusFilter(e.target.value)}
+                        className="input-field bg-[#0c0706] text-xs cursor-pointer flex-1 md:flex-none"
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="approved">Approved</option>
+                        <option value="pending">Pending</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+
+                      <select
+                        value={orderCategoryFilter}
+                        onChange={(e) => setOrderCategoryFilter(e.target.value)}
+                        className="input-field bg-[#0c0706] text-xs cursor-pointer flex-1 md:flex-none"
+                      >
+                        <option value="all">All Categories</option>
+                        <option value="Cake">Cakes</option>
+                        <option value="Cupcake">Cupcakes</option>
+                      </select>
+
+                      <select
+                        value={orderDeliveryFilter}
+                        onChange={(e) => setOrderDeliveryFilter(e.target.value)}
+                        className="input-field bg-[#0c0706] text-xs cursor-pointer flex-1 md:flex-none"
+                      >
+                        <option value="all">All Deliveries</option>
+                        <option value="today">Today's Deliveries</option>
+                        <option value="tomorrow">Tomorrow's Deliveries</option>
+                        <option value="this-week">This Week's Deliveries</option>
+                        <option value="custom">Custom Delivery Date</option>
+                      </select>
+
+                      {orderDeliveryFilter === "custom" && (
+                        <input
+                          type="date"
+                          value={orderDeliveryCustomDate}
+                          onChange={(e) => setOrderDeliveryCustomDate(e.target.value)}
+                          className="input-field bg-[#0c0706] text-xs cursor-pointer flex-1 md:flex-none font-mono"
+                        />
+                      )}
+
+                      <select
+                        value={orderSort}
+                        onChange={(e) => setOrderSort(e.target.value)}
+                        className="input-field bg-[#0c0706] text-xs cursor-pointer flex-1 md:flex-none"
+                      >
+                        <option value="date-desc">Newest First</option>
+                        <option value="date-asc">Oldest First</option>
+                        <option value="delivery-asc">Delivery Date (Earliest First)</option>
+                        <option value="delivery-desc">Delivery Date (Latest First)</option>
+                        <option value="name-asc">Name A-Z</option>
+                        <option value="name-desc">Name Z-A</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#120a09] border border-[#d4af37]/10 rounded-lg p-5">
+                    <h3 className="font-serif text-lg font-bold text-[#d4af37] border-b border-[#d4af37]/10 pb-3 mb-4">
+                      Custom Celebration Cake Orders
+                    </h3>
                   
                   {filteredOrders.length === 0 ? (
                     <div className="text-center text-[#8c7e7a] py-12">No custom cake orders found matching search criteria.</div>
@@ -702,7 +1069,8 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </div>
-              )}
+              </div>
+            )}
 
               {/* TAB 3: VLOGS & BLOGS CRUD MANAGER */}
               {activeTab === "articles" && (
@@ -1021,14 +1389,391 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
+                    {/* SECTION: ACADEMY CONTACT DETAILS */}
+                    <div className="border-t border-[#d4af37]/15 pt-5 space-y-4">
+                      <h4 className="font-serif text-sm font-bold text-[#d4af37] flex items-center gap-1.5">
+                        <MessageSquare size={15} /> Academy Contact Details
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Contact Phone 1</label>
+                          <input
+                            type="text"
+                            value={heroForm.contactPhone1}
+                            onChange={(e) => setHeroForm({ ...heroForm, contactPhone1: e.target.value })}
+                            placeholder="e.g. 098 979 4444"
+                            className="input-field"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Contact Phone 2</label>
+                          <input
+                            type="text"
+                            value={heroForm.contactPhone2}
+                            onChange={(e) => setHeroForm({ ...heroForm, contactPhone2: e.target.value })}
+                            placeholder="e.g. 093 480 2222"
+                            className="input-field"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Contact Email</label>
+                          <input
+                            type="email"
+                            value={heroForm.contactEmail}
+                            onChange={(e) => setHeroForm({ ...heroForm, contactEmail: e.target.value })}
+                            placeholder="e.g. info@vccakeacademy.com"
+                            className="input-field"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Academy Address (English)</label>
+                          <input
+                            type="text"
+                            value={heroForm.contactAddressEn}
+                            onChange={(e) => setHeroForm({ ...heroForm, contactAddressEn: e.target.value })}
+                            placeholder="e.g. Bole, Addis Ababa"
+                            className="input-field"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Academy Address (Amharic)</label>
+                          <input
+                            type="text"
+                            value={heroForm.contactAddressAm}
+                            onChange={(e) => setHeroForm({ ...heroForm, contactAddressAm: e.target.value })}
+                            placeholder="e.g. ቦሌ፣ አዲስ አበባ"
+                            className="input-field"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* SECTION: PRICING CONFIGURATION */}
+                    <div className="border-t border-[#d4af37]/15 pt-5 space-y-4">
+                      <h4 className="font-serif text-sm font-bold text-[#d4af37] flex items-center gap-1.5">
+                        <Landmark size={15} /> Pricing Configurations
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Course Registration Fee (ETB)</label>
+                          <input
+                            type="number"
+                            value={heroForm.coursePrice}
+                            onChange={(e) => setHeroForm({ ...heroForm, coursePrice: e.target.value })}
+                            placeholder="e.g. 2500"
+                            className="input-field font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Additional Layer Price (ETB)</label>
+                          <input
+                            type="number"
+                            value={heroForm.layerPrice}
+                            onChange={(e) => setHeroForm({ ...heroForm, layerPrice: e.target.value })}
+                            placeholder="e.g. 300"
+                            className="input-field font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* SECTION: SYSTEM STATUS & SERVICE TOGGLES */}
+                    <div className="border-t border-[#d4af37]/15 pt-5 space-y-4">
+                      <h4 className="font-serif text-sm font-bold text-[#d4af37] flex items-center gap-1.5">
+                        <Settings size={15} /> Service Status & Course Shifts Enablement
+                      </h4>
+                      
+                      <div className="bg-[#0c0706] p-4 rounded border border-[#d4af37]/10 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="block font-medium text-white text-xs">Enable Course Registrations</span>
+                            <span className="text-[10px] text-[#8c7e7a]">Globally allow new student registrations online</span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={heroForm.coursesEnabled}
+                            onChange={(e) => setHeroForm({ ...heroForm, coursesEnabled: e.target.checked })}
+                            className="w-4 h-4 rounded text-[#d4af37] bg-black border-[#d4af37]/30 focus:ring-[#d4af37]/50"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between border-t border-[#d4af37]/5 pt-3">
+                          <div>
+                            <span className="block font-medium text-white text-xs">Enable Cake Ordering</span>
+                            <span className="text-[10px] text-[#8c7e7a]">Globally allow customers to submit cake orders</span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={heroForm.ordersEnabled}
+                            onChange={(e) => setHeroForm({ ...heroForm, ordersEnabled: e.target.checked })}
+                            className="w-4 h-4 rounded text-[#d4af37] bg-black border-[#d4af37]/30 focus:ring-[#d4af37]/50"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="bg-[#0c0706] p-3 rounded border border-[#d4af37]/10 flex flex-col justify-between items-start gap-3">
+                          <span className="text-xs font-medium text-white">Morning Shift</span>
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-[10px] text-[#8c7e7a]">Active</span>
+                            <input
+                              type="checkbox"
+                              checked={heroForm.morningShiftEnabled}
+                              onChange={(e) => setHeroForm({ ...heroForm, morningShiftEnabled: e.target.checked })}
+                              className="w-4 h-4 rounded text-[#d4af37] bg-black border-[#d4af37]/30"
+                            />
+                          </div>
+                          <div className="w-full">
+                            <label className="block text-[10px] text-[#c9bfbc] mb-1">Seats Capacity</label>
+                            <input
+                              type="number"
+                              value={heroForm.morningShiftCapacity || ""}
+                              onChange={(e) => setHeroForm({ ...heroForm, morningShiftCapacity: e.target.value })}
+                              className="input-field text-xs py-1"
+                              placeholder="30"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="bg-[#0c0706] p-3 rounded border border-[#d4af37]/10 flex flex-col justify-between items-start gap-3">
+                          <span className="text-xs font-medium text-white">Afternoon Shift</span>
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-[10px] text-[#8c7e7a]">Active</span>
+                            <input
+                              type="checkbox"
+                              checked={heroForm.afternoonShiftEnabled}
+                              onChange={(e) => setHeroForm({ ...heroForm, afternoonShiftEnabled: e.target.checked })}
+                              className="w-4 h-4 rounded text-[#d4af37] bg-black border-[#d4af37]/30"
+                            />
+                          </div>
+                          <div className="w-full">
+                            <label className="block text-[10px] text-[#c9bfbc] mb-1">Seats Capacity</label>
+                            <input
+                              type="number"
+                              value={heroForm.afternoonShiftCapacity || ""}
+                              onChange={(e) => setHeroForm({ ...heroForm, afternoonShiftCapacity: e.target.value })}
+                              className="input-field text-xs py-1"
+                              placeholder="30"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="bg-[#0c0706] p-3 rounded border border-[#d4af37]/10 flex flex-col justify-between items-start gap-3">
+                          <span className="text-xs font-medium text-white">Night Shift</span>
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-[10px] text-[#8c7e7a]">Active</span>
+                            <input
+                              type="checkbox"
+                              checked={heroForm.nightShiftEnabled}
+                              onChange={(e) => setHeroForm({ ...heroForm, nightShiftEnabled: e.target.checked })}
+                              className="w-4 h-4 rounded text-[#d4af37] bg-black border-[#d4af37]/30"
+                            />
+                          </div>
+                          <div className="w-full">
+                            <label className="block text-[10px] text-[#c9bfbc] mb-1">Seats Capacity</label>
+                            <input
+                              type="number"
+                              value={heroForm.nightShiftCapacity || ""}
+                              onChange={(e) => setHeroForm({ ...heroForm, nightShiftCapacity: e.target.value })}
+                              className="input-field text-xs py-1"
+                              placeholder="30"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <button
                       type="submit"
                       disabled={heroLoading}
                       className="w-full gold-btn py-2.5 rounded font-semibold text-sm transition mt-8 cursor-pointer"
                     >
-                      {heroLoading ? "Updating Settings..." : "Save Settings & Merchant Details"}
+                      {heroLoading ? "Updating Settings..." : "Save Settings & Configurations"}
                     </button>
                   </form>
+                </div>
+              )}
+
+              {/* TAB: PRODUCTS CATALOG MANAGEMENT */}
+              {activeTab === "products" && (
+                <div className="space-y-6">
+                  {/* Create / Edit Form segment */}
+                  <div className="bg-[#120a09] border border-[#d4af37]/10 rounded-lg p-5">
+                    <h3 className="font-serif text-lg font-bold text-[#d4af37] border-b border-[#d4af37]/10 pb-3 mb-4 flex items-center gap-2">
+                      <Layers size={18} /> {prodForm.id ? `Edit Catalog Item #${prodForm.id}` : "Add New Catalog Item / Product"}
+                    </h3>
+
+                    {prodMsg && <div className="bg-[#d4af37]/10 border border-[#d4af37]/35 text-[#d4af37] p-3 rounded mb-4 text-xs font-semibold">{prodMsg}</div>}
+
+                    <form onSubmit={handleProductSubmit} className="space-y-4 text-sm">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Product Category</label>
+                          <select
+                            value={prodForm.category}
+                            onChange={(e) => setProdForm({ ...prodForm, category: e.target.value })}
+                            className="input-field bg-[#0c0706] cursor-pointer"
+                          >
+                            <option value="Cakes">Cakes</option>
+                            <option value="Cupcakes">Cupcakes</option>
+                            <option value="Pastries">Pastries</option>
+                            <option value="Cookies">Cookies</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Product / Item Name</label>
+                          <input
+                            type="text"
+                            value={prodForm.name}
+                            onChange={(e) => setProdForm({ ...prodForm, name: e.target.value })}
+                            placeholder="e.g. Chocolate Fudge Velvet"
+                            className="input-field"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Base Price (ETB)</label>
+                          <input
+                            type="number"
+                            value={prodForm.basePrice}
+                            onChange={(e) => setProdForm({ ...prodForm, basePrice: e.target.value })}
+                            placeholder="e.g. 800"
+                            className="input-field font-mono"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div className="md:col-span-2">
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Image URL</label>
+                          <input
+                            type="text"
+                            value={prodForm.image || ""}
+                            onChange={(e) => setProdForm({ ...prodForm, image: e.target.value })}
+                            placeholder="e.g. https://images.unsplash.com/photo-..."
+                            className="input-field"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Available Stock Quantity</label>
+                          <input
+                            type="number"
+                            value={prodForm.stock || ""}
+                            onChange={(e) => setProdForm({ ...prodForm, stock: e.target.value })}
+                            placeholder="e.g. 15"
+                            className="input-field font-mono"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 justify-end pt-2">
+                        {prodForm.id && (
+                          <button
+                            type="button"
+                            onClick={() => setProdForm({ id: null, name: "", category: "Cakes", basePrice: "", image: "", stock: "10", isEnabled: true })}
+                            className="bg-red-950/20 border border-red-500/30 text-red-400 py-2 px-4 text-xs rounded cursor-pointer transition hover:bg-red-900/40"
+                          >
+                            Cancel Edit
+                          </button>
+                        )}
+                        <button
+                          type="submit"
+                          disabled={prodLoading}
+                          className="gold-btn py-2 px-6 text-xs font-semibold cursor-pointer"
+                        >
+                          {prodForm.id ? "Save Changes" : "Create Product"}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Products Grid List */}
+                  <div className="bg-[#120a09] border border-[#d4af37]/10 rounded-lg p-5">
+                    <h3 className="font-serif text-lg font-bold text-[#d4af37] border-b border-[#d4af37]/10 pb-3 mb-4">
+                      Active Catalog Products List
+                    </h3>
+
+                    {products.length === 0 ? (
+                      <div className="text-center text-[#8c7e7a] py-12">No products found in catalog database.</div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-sm">
+                          <thead>
+                            <tr className="border-b border-[#d4af37]/15 text-[#8c7e7a] text-xs uppercase font-semibold">
+                              <th className="px-4 py-3">Category</th>
+                              <th className="px-4 py-3">Product Name</th>
+                              <th className="px-4 py-3">Base Price</th>
+                              <th className="px-4 py-3 text-center">Stock</th>
+                              <th className="px-4 py-3 text-center">Status</th>
+                              <th className="px-4 py-3 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {products.map((prod) => (
+                              <tr key={prod.id} className="border-b border-[#d4af37]/5 hover:bg-white/[0.02]">
+                                <td className="px-4 py-3 font-medium text-[#d4af37]">{prod.category}</td>
+                                <td className="px-4 py-3 text-white font-serif flex items-center gap-3">
+                                  {prod.image ? (
+                                    <img src={prod.image} alt={prod.name} className="w-8 h-8 rounded object-cover border border-[#d4af37]/25" />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded bg-[#0c0706] border border-[#d4af37]/15 flex items-center justify-center text-[9px] text-[#8c7e7a]">No Img</div>
+                                  )}
+                                  <span>{prod.name}</span>
+                                </td>
+                                <td className="px-4 py-3 font-mono">{Number(prod.basePrice).toLocaleString()} ETB</td>
+                                <td className="px-4 py-3 text-center font-mono font-bold text-white">{prod.stock !== undefined ? prod.stock : 10}</td>
+                                <td className="px-4 py-3 text-center">
+                                  <button
+                                    onClick={() => handleProductToggle(prod)}
+                                    className={`px-3 py-1 rounded-full text-[10px] font-bold cursor-pointer transition ${
+                                      prod.isEnabled
+                                        ? "bg-green-500/10 border border-green-500/30 text-green-400"
+                                        : "bg-red-500/10 border border-red-500/30 text-red-400"
+                                    }`}
+                                  >
+                                    {prod.isEnabled ? "Enabled" : "Disabled"}
+                                  </button>
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <div className="flex gap-2 justify-end">
+                                    <button
+                                      onClick={() => {
+                                        setProdForm({ 
+                                          id: prod.id, 
+                                          name: prod.name, 
+                                          category: prod.category, 
+                                          basePrice: String(prod.basePrice), 
+                                          image: prod.image || "", 
+                                          stock: String(prod.stock !== undefined ? prod.stock : 10),
+                                          isEnabled: prod.isEnabled 
+                                        });
+                                        window.scrollTo({ top: 0, behavior: "smooth" });
+                                      }}
+                                      className="border border-[#d4af37]/20 hover:bg-[#d4af37]/10 text-[#d4af37] p-1.5 rounded cursor-pointer"
+                                      title="Edit Item"
+                                    >
+                                      <Edit2 size={13} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleProductDelete(prod.id)}
+                                      className="border border-red-500/20 hover:bg-red-500/10 text-red-400 p-1.5 rounded cursor-pointer"
+                                      title="Delete Item"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

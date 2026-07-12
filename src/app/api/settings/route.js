@@ -6,7 +6,13 @@ import { verifyToken } from "@/lib/auth";
 export async function GET() {
   try {
     const settings = await db.getHeroSettings();
-    return NextResponse.json({ success: true, settings });
+    const regs = await db.getCourseRegistrations();
+    const counts = {
+      morning: regs.filter(r => r.shift.toLowerCase() === "morning" && r.status !== "rejected").length,
+      afternoon: regs.filter(r => r.shift.toLowerCase() === "afternoon" && r.status !== "rejected").length,
+      night: regs.filter(r => r.shift.toLowerCase() === "night" && r.status !== "rejected").length
+    };
+    return NextResponse.json({ success: true, settings, shiftCounts: counts });
   } catch (error) {
     console.error("GET settings error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -22,7 +28,14 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { title, subtitle, ctaText, imageUrl, cbeAccountNo, cbeAccountHolder, telebirrPhone, telebirrAccountHolder } = body;
+    const { 
+      title, subtitle, ctaText, imageUrl, 
+      cbeAccountNo, cbeAccountHolder, telebirrPhone, telebirrAccountHolder,
+      contactPhone1, contactPhone2, contactEmail, contactAddressEn, contactAddressAm,
+      coursePrice, layerPrice, coursesEnabled, ordersEnabled,
+      morningShiftEnabled, afternoonShiftEnabled, nightShiftEnabled,
+      morningShiftCapacity, afternoonShiftCapacity, nightShiftCapacity
+    } = body;
 
     if (!title || !subtitle || !ctaText) {
       return NextResponse.json({ success: false, error: "Missing required settings fields." }, { status: 400 });
@@ -36,7 +49,22 @@ export async function POST(request) {
       cbeAccountNo,
       cbeAccountHolder,
       telebirrPhone,
-      telebirrAccountHolder
+      telebirrAccountHolder,
+      contactPhone1,
+      contactPhone2,
+      contactEmail,
+      contactAddressEn,
+      contactAddressAm,
+      coursePrice,
+      layerPrice,
+      coursesEnabled,
+      ordersEnabled,
+      morningShiftEnabled,
+      afternoonShiftEnabled,
+      nightShiftEnabled,
+      morningShiftCapacity,
+      afternoonShiftCapacity,
+      nightShiftCapacity
     );
     return NextResponse.json({ success: true, settings: updated, message: "Settings updated successfully!" });
   } catch (error) {
