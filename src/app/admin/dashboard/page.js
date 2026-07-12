@@ -674,10 +674,12 @@ export default function AdminDashboard() {
     });
 
   return (
-    <div className="min-h-screen bg-[#0c0706] text-white flex flex-col font-sans">
+    <div className="min-h-screen bg-[#0c0706] text-white flex flex-col font-sans relative overflow-hidden grid-bg">
+      <div className="aurora-glow top-0 right-0 -mr-40 opacity-40 pointer-events-none" />
+      <div className="aurora-glow bottom-0 left-0 -ml-40 opacity-30 pointer-events-none" />
       
       {/* Dashboard Top Header bar */}
-      <header className="bg-[#120a09] border-b border-[#d4af37]/15 py-4 px-4 sm:px-6 flex flex-col md:flex-row gap-4 justify-between items-center">
+      <header className="bg-[#120a09]/90 backdrop-blur-md border-b border-[#d4af37]/15 py-4 px-4 sm:px-6 flex flex-col md:flex-row gap-4 justify-between items-center relative z-20">
         <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
           <div className="flex items-center gap-3">
             <div className="bg-[#d4af37]/10 p-2 rounded border border-[#d4af37]/35 text-[#d4af37]">
@@ -719,7 +721,7 @@ export default function AdminDashboard() {
       <div className="flex-1 flex flex-col md:flex-row">
         
         {/* Sidebar Nav */}
-        <aside className="w-full md:w-64 bg-[#0e0807] border-b md:border-b-0 md:border-r border-[#d4af37]/10 p-4 shrink-0">
+        <aside className="w-full md:w-64 bg-[#0e0807]/90 backdrop-blur-md border-b md:border-b-0 md:border-r border-[#d4af37]/10 p-4 shrink-0 relative z-20">
           <div className="grid grid-cols-2 md:grid-cols-1 gap-2">
             {[
               { id: "registrations", label: "Registrations", icon: <Users size={15} />, count: data.registrations.length },
@@ -736,10 +738,10 @@ export default function AdminDashboard() {
                   setActiveTab(tab.id);
                   setSearch("");
                 }}
-                className={`flex items-center justify-between w-full text-left px-3 py-2.5 rounded text-xs sm:text-sm transition cursor-pointer ${
+                className={`flex items-center justify-between w-full text-left px-3 py-2.5 rounded text-xs sm:text-sm transition-all duration-300 cursor-pointer ${
                   activeTab === tab.id
-                    ? "bg-[#d4af37]/10 text-[#d4af37] font-semibold border border-[#d4af37]/25"
-                    : "text-[#c9bfbc] hover:bg-white/5 hover:text-white"
+                    ? "bg-[#d4af37]/10 text-[#d4af37] font-semibold border-y border-r border-[#d4af37]/25 border-l-4 border-l-[#d4af37] shadow-[0_0_15px_rgba(212,175,55,0.06)] scale-[1.02]"
+                    : "text-[#c9bfbc] border-l-4 border-l-transparent hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -747,7 +749,11 @@ export default function AdminDashboard() {
                   <span className="truncate">{tab.label}</span>
                 </div>
                 {tab.count !== undefined && (
-                  <span className="text-[10px] bg-white/10 text-white font-bold px-1.5 py-0.5 rounded-full font-mono shrink-0">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full font-mono shrink-0 border transition-all duration-300 ${
+                    activeTab === tab.id
+                      ? "bg-[#d4af37]/20 border-[#d4af37]/45 text-[#d4af37]"
+                      : "bg-white/10 border-white/10 text-white/90"
+                  }`}>
                     {tab.count}
                   </span>
                 )}
@@ -899,16 +905,21 @@ export default function AdminDashboard() {
                                 {Math.max(0, Number(reg.totalAmount || 0) - Number(reg.amountPaid)).toLocaleString()} ETB
                               </td>
                               <td className="px-4 py-3 text-center">
-                                <span
-                                  className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                                  reg.status === "approved"
+                                    ? "bg-green-500/10 text-green-400 border border-green-500/25"
+                                    : reg.status === "rejected"
+                                    ? "bg-red-500/10 text-red-400 border border-red-500/25"
+                                    : "bg-amber-500/10 text-amber-400 border border-amber-500/25"
+                                }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${
                                     reg.status === "approved"
-                                      ? "bg-green-500/10 text-green-400"
+                                      ? "bg-green-400 shadow-[0_0_8px_#22c55e]"
                                       : reg.status === "rejected"
-                                      ? "bg-red-500/10 text-red-400"
-                                      : "bg-amber-500/10 text-amber-400"
-                                  }`}
-                                >
-                                  {reg.status.toUpperCase()}
+                                      ? "bg-red-400 shadow-[0_0_8px_#ef4444]"
+                                      : "bg-amber-400 shadow-[0_0_8px_#f59e0b]"
+                                  }`} />
+                                  {reg.status}
                                 </span>
                               </td>
                               <td className="px-4 py-3 text-right space-y-2">
@@ -1124,16 +1135,21 @@ export default function AdminDashboard() {
                                 )}
                               </td>
                               <td className="px-4 py-3 text-center">
-                                <span
-                                  className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                                  order.status === "approved"
+                                    ? "bg-green-500/10 text-green-400 border border-green-500/25"
+                                    : order.status === "rejected"
+                                    ? "bg-red-500/10 text-red-400 border border-red-500/25"
+                                    : "bg-amber-500/10 text-amber-400 border border-amber-500/25"
+                                }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${
                                     order.status === "approved"
-                                      ? "bg-green-500/10 text-green-400"
+                                      ? "bg-green-400 shadow-[0_0_8px_#22c55e]"
                                       : order.status === "rejected"
-                                      ? "bg-red-500/10 text-red-400"
-                                      : "bg-amber-500/10 text-amber-400"
-                                  }`}
-                                >
-                                  {order.status.toUpperCase()}
+                                      ? "bg-red-400 shadow-[0_0_8px_#ef4444]"
+                                      : "bg-amber-400 shadow-[0_0_8px_#f59e0b]"
+                                  }`} />
+                                  {order.status}
                                 </span>
                               </td>
                               <td className="px-4 py-3 text-right space-y-2">
@@ -2063,14 +2079,35 @@ export default function AdminDashboard() {
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                         <div className="md:col-span-2">
-                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Avatar URL (Optional placeholder)</label>
-                          <input
-                            type="text"
-                            value={testForm.avatarUrl}
-                            onChange={(e) => setTestForm({ ...testForm, avatarUrl: e.target.value })}
-                            placeholder="e.g. https://images.unsplash.com/photo-... or leave blank for default"
-                            className="input-field font-mono"
-                          />
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Avatar Picture (Upload from Local Disk)</label>
+                          <div className="flex gap-4 items-center">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const uploadedUrl = await handleImageUpload(file);
+                                  if (uploadedUrl) {
+                                    setTestForm({ ...testForm, avatarUrl: uploadedUrl });
+                                  }
+                                }
+                              }}
+                              className="input-field text-xs text-[#8c7e7a]"
+                            />
+                            {testForm.avatarUrl && (
+                              <div className="shrink-0 flex items-center gap-2 border border-[#d4af37]/25 p-1 rounded bg-[#0c0706]">
+                                <img src={testForm.avatarUrl} alt="Avatar Preview" className="w-8 h-8 object-cover rounded-full" />
+                                <button
+                                  type="button"
+                                  onClick={() => setTestForm({ ...testForm, avatarUrl: "" })}
+                                  className="text-red-400 text-xs px-2 hover:underline animate-pulse"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div>
                           <button
