@@ -160,6 +160,9 @@ export default function Home() {
             {/* Left Side: Poster content */}
             <div className="w-full lg:w-[56%] p-8 sm:p-12 md:p-16 lg:pl-24 flex flex-col justify-center space-y-6 relative z-10 pt-28 lg:pb-36">
               
+              {/* Spacer to clear fixed navbar */}
+              <div className="h-12 lg:h-20 shrink-0" />
+              
               {/* Badge */}
               <div className="text-center lg:text-left">
                 <span className="academy-badge text-[#4a2c11] border-[#4a2c11]/15 bg-[#4a2c11]/5">
@@ -629,6 +632,7 @@ export default function Home() {
         isOpen={registerOpen}
         onClose={() => setRegisterOpen(false)}
         lang={lang}
+        settings={heroSettings}
       />
 
       {/* Cake Order Modal */}
@@ -636,6 +640,7 @@ export default function Home() {
         isOpen={orderOpen}
         onClose={() => setOrderOpen(false)}
         lang={lang}
+        settings={heroSettings}
       />
     </div>
   );

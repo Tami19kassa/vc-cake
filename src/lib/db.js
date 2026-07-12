@@ -331,9 +331,27 @@ export const initDB = async () => {
         subtitle TEXT NOT NULL,
         ctaText VARCHAR(255) NOT NULL,
         imageUrl TEXT,
+        cbeAccountNo VARCHAR(255) DEFAULT '1000444555666',
+        cbeAccountHolder VARCHAR(255) DEFAULT 'Biruk Tigistu Lugaba',
+        telebirrPhone VARCHAR(255) DEFAULT '251911378448',
+        telebirrAccountHolder VARCHAR(255) DEFAULT 'Kibrom Haileselassie Abreha',
         updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
+
+    // Dynamic schema migrations for existing database tables
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN cbeAccountNo VARCHAR(255) DEFAULT '1000444555666'`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN cbeAccountHolder VARCHAR(255) DEFAULT 'Biruk Tigistu Lugaba'`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN telebirrPhone VARCHAR(255) DEFAULT '251911378448'`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN telebirrAccountHolder VARCHAR(255) DEFAULT 'Kibrom Haileselassie Abreha'`);
+    } catch (e) {}
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS course_registrations (
@@ -482,17 +500,54 @@ export const db = {
     return rows[0] || null;
   },
 
-  async updateHeroSettings(title, subtitle, ctaText, imageUrl) {
+  async updateHeroSettings(title, subtitle, ctaText, imageUrl, cbeAccountNo, cbeAccountHolder, telebirrPhone, telebirrAccountHolder) {
     const config = getDBConfig();
+    const cbeAcc = cbeAccountNo || '1000444555666';
+    const cbeHolder = cbeAccountHolder || 'Biruk Tigistu Lugaba';
+    const telePhone = telebirrPhone || '251911378448';
+    const teleHolder = telebirrAccountHolder || 'Kibrom Haileselassie Abreha';
+
     if (config.type === 'json') {
-      return await jsonQuery('hero_settings', 'update', { id: 1, fields: { title, subtitle, ctaText, imageUrl } });
+      return await jsonQuery('hero_settings', 'update', {
+        id: 1,
+        fields: {
+          title,
+          subtitle,
+          ctaText,
+          imageUrl,
+          cbeAccountNo: cbeAcc,
+          cbeAccountHolder: cbeHolder,
+          telebirrPhone: telePhone,
+          telebirrAccountHolder: teleHolder
+        }
+      });
     }
     const myPool = getPool();
     await myPool.query(
-      'INSERT INTO hero_settings (id, title, subtitle, ctaText, imageUrl) VALUES (1, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE title = VALUES(title), subtitle = VALUES(subtitle), ctaText = VALUES(ctaText), imageUrl = VALUES(imageUrl)',
-      [title, subtitle, ctaText, imageUrl]
+      `INSERT INTO hero_settings (id, title, subtitle, ctaText, imageUrl, cbeAccountNo, cbeAccountHolder, telebirrPhone, telebirrAccountHolder) 
+       VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?) 
+       ON DUPLICATE KEY UPDATE 
+         title = VALUES(title), 
+         subtitle = VALUES(subtitle), 
+         ctaText = VALUES(ctaText), 
+         imageUrl = VALUES(imageUrl),
+         cbeAccountNo = VALUES(cbeAccountNo),
+         cbeAccountHolder = VALUES(cbeAccountHolder),
+         telebirrPhone = VALUES(telebirrPhone),
+         telebirrAccountHolder = VALUES(telebirrAccountHolder)`,
+      [title, subtitle, ctaText, imageUrl, cbeAcc, cbeHolder, telePhone, teleHolder]
     );
-    return { id: 1, title, subtitle, ctaText, imageUrl };
+    return {
+      id: 1,
+      title,
+      subtitle,
+      ctaText,
+      imageUrl,
+      cbeAccountNo: cbeAcc,
+      cbeAccountHolder: cbeHolder,
+      telebirrPhone: telePhone,
+      telebirrAccountHolder: teleHolder
+    };
   },
 
   // Admin Account
@@ -516,7 +571,9 @@ export const db = {
       shift: data.shift,
       paymentReference: data.paymentReference,
       amountPaid: Number(data.amountPaid),
-      status: 'pending'
+      status: data.status || 'pending',
+      paymentMethod: data.paymentMethod || 'cbe',
+      verifiedAt: data.verifiedAt || null
     };
 
     if (config.type === 'json') {
@@ -524,8 +581,18 @@ export const db = {
     }
     const myPool = getPool();
     const [result] = await myPool.query(
-      'INSERT INTO course_registrations (studentName, studentPhone, studentEmail, shift, paymentReference, amountPaid, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [regData.studentName, regData.studentPhone, regData.studentEmail, regData.shift, regData.paymentReference, regData.amountPaid, regData.status]
+      'INSERT INTO course_registrations (studentName, studentPhone, studentEmail, shift, paymentReference, amountPaid, status, paymentMethod, verifiedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        regData.studentName,
+        regData.studentPhone,
+        regData.studentEmail,
+        regData.shift,
+        regData.paymentReference,
+        regData.amountPaid,
+        regData.status,
+        regData.paymentMethod,
+        regData.verifiedAt
+      ]
     );
     return { id: result.insertId, ...regData };
   },
@@ -542,12 +609,13 @@ export const db = {
 
   async updateCourseRegistrationStatus(id, status) {
     const config = getDBConfig();
+    const verifiedAt = status === 'approved' ? new Date().toISOString() : null;
     if (config.type === 'json') {
-      return await jsonQuery('course_registrations', 'update', { id, fields: { status } });
+      return await jsonQuery('course_registrations', 'update', { id, fields: { status, verifiedAt } });
     }
     const myPool = getPool();
-    await myPool.query('UPDATE course_registrations SET status = ? WHERE id = ?', [status, id]);
-    return { id, status };
+    await myPool.query('UPDATE course_registrations SET status = ?, verifiedAt = ? WHERE id = ?', [status, verifiedAt, id]);
+    return { id, status, verifiedAt };
   },
 
   // Cake Orders
@@ -564,7 +632,9 @@ export const db = {
       deliveryDate: data.deliveryDate,
       paymentReference: data.paymentReference,
       amountPaid: Number(data.amountPaid),
-      status: 'pending'
+      status: data.status || 'pending',
+      paymentMethod: data.paymentMethod || 'cbe',
+      verifiedAt: data.verifiedAt || null
     };
 
     if (config.type === 'json') {
@@ -572,7 +642,7 @@ export const db = {
     }
     const myPool = getPool();
     const [result] = await myPool.query(
-      'INSERT INTO cake_orders (customerName, customerPhone, cakeType, sizeKg, layers, flavor, description, deliveryDate, paymentReference, amountPaid, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO cake_orders (customerName, customerPhone, cakeType, sizeKg, layers, flavor, description, deliveryDate, paymentReference, amountPaid, status, paymentMethod, verifiedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         orderData.customerName,
         orderData.customerPhone,
@@ -584,7 +654,9 @@ export const db = {
         orderData.deliveryDate,
         orderData.paymentReference,
         orderData.amountPaid,
-        orderData.status
+        orderData.status,
+        orderData.paymentMethod,
+        orderData.verifiedAt
       ]
     );
     return { id: result.insertId, ...orderData };
@@ -602,12 +674,73 @@ export const db = {
 
   async updateCakeOrderStatus(id, status) {
     const config = getDBConfig();
+    const verifiedAt = status === 'approved' ? new Date().toISOString() : null;
     if (config.type === 'json') {
-      return await jsonQuery('cake_orders', 'update', { id, fields: { status } });
+      return await jsonQuery('cake_orders', 'update', { id, fields: { status, verifiedAt } });
     }
     const myPool = getPool();
-    await myPool.query('UPDATE cake_orders SET status = ? WHERE id = ?', [status, id]);
-    return { id, status };
+    await myPool.query('UPDATE cake_orders SET status = ?, verifiedAt = ? WHERE id = ?', [status, verifiedAt, id]);
+    return { id, status, verifiedAt };
+  },
+
+  async getCourseRegistrationById(id) {
+    const config = getDBConfig();
+    if (config.type === 'json') {
+      const list = await jsonQuery('course_registrations', 'select_all');
+      return list.find(item => item.id === Number(id));
+    }
+    const myPool = getPool();
+    const [rows] = await myPool.query('SELECT * FROM course_registrations WHERE id = ?', [id]);
+    return rows[0] || null;
+  },
+
+  async getCakeOrderById(id) {
+    const config = getDBConfig();
+    if (config.type === 'json') {
+      const list = await jsonQuery('cake_orders', 'select_all');
+      return list.find(item => item.id === Number(id));
+    }
+    const myPool = getPool();
+    const [rows] = await myPool.query('SELECT * FROM cake_orders WHERE id = ?', [id]);
+    return rows[0] || null;
+  },
+
+  async getCourseRegistrationsByPhoneOrRef(search) {
+    const config = getDBConfig();
+    const cleanSearch = search.trim();
+    if (config.type === 'json') {
+      const list = await jsonQuery('course_registrations', 'select_all');
+      return list.filter(item => 
+        item.studentPhone.includes(cleanSearch) || 
+        item.paymentReference.toUpperCase().includes(cleanSearch.toUpperCase())
+      );
+    }
+    const myPool = getPool();
+    const queryStr = '%' + cleanSearch + '%';
+    const [rows] = await myPool.query(
+      'SELECT * FROM course_registrations WHERE studentPhone LIKE ? OR UPPER(paymentReference) LIKE ? ORDER BY id DESC',
+      [queryStr, queryStr.toUpperCase()]
+    );
+    return rows;
+  },
+
+  async getCakeOrdersByPhoneOrRef(search) {
+    const config = getDBConfig();
+    const cleanSearch = search.trim();
+    if (config.type === 'json') {
+      const list = await jsonQuery('cake_orders', 'select_all');
+      return list.filter(item => 
+        item.customerPhone.includes(cleanSearch) || 
+        item.paymentReference.toUpperCase().includes(cleanSearch.toUpperCase())
+      );
+    }
+    const myPool = getPool();
+    const queryStr = '%' + cleanSearch + '%';
+    const [rows] = await myPool.query(
+      'SELECT * FROM cake_orders WHERE customerPhone LIKE ? OR UPPER(paymentReference) LIKE ? ORDER BY id DESC',
+      [queryStr, queryStr.toUpperCase()]
+    );
+    return rows;
   },
 
   // Articles (Blog / Vlog)

@@ -17,8 +17,10 @@ import {
   Plus,
   Trash2,
   Edit2,
-  AlertCircle
+  AlertCircle,
+  QrCode
 } from "lucide-react";
+import AdminScannerModal from "@/components/AdminScannerModal";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -35,8 +37,13 @@ export default function AdminDashboard() {
     titleEn: "", titleAm: "",
     subtitleEn: "", subtitleAm: "",
     ctaTextEn: "", ctaTextAm: "",
-    imageUrl: ""
+    imageUrl: "",
+    cbeAccountNo: "",
+    cbeAccountHolder: "",
+    telebirrPhone: "",
+    telebirrAccountHolder: ""
   });
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [heroLoading, setHeroLoading] = useState(false);
   const [heroMsg, setHeroMsg] = useState("");
 
@@ -126,7 +133,11 @@ export default function AdminDashboard() {
           titleEn: tEn, titleAm: tAm,
           subtitleEn: sEn, subtitleAm: sAm,
           ctaTextEn: cEn, ctaTextAm: cAm,
-          imageUrl: resData.settings.imageUrl || ""
+          imageUrl: resData.settings.imageUrl || "",
+          cbeAccountNo: resData.settings.cbeAccountNo || "",
+          cbeAccountHolder: resData.settings.cbeAccountHolder || "",
+          telebirrPhone: resData.settings.telebirrPhone || "",
+          telebirrAccountHolder: resData.settings.telebirrAccountHolder || ""
         });
       }
     } catch (e) {
@@ -225,7 +236,11 @@ export default function AdminDashboard() {
       title: JSON.stringify({ en: heroForm.titleEn, am: heroForm.titleAm }),
       subtitle: JSON.stringify({ en: heroForm.subtitleEn, am: heroForm.subtitleAm }),
       ctaText: JSON.stringify({ en: heroForm.ctaTextEn, am: heroForm.ctaTextAm }),
-      imageUrl: heroForm.imageUrl
+      imageUrl: heroForm.imageUrl,
+      cbeAccountNo: heroForm.cbeAccountNo,
+      cbeAccountHolder: heroForm.cbeAccountHolder,
+      telebirrPhone: heroForm.telebirrPhone,
+      telebirrAccountHolder: heroForm.telebirrAccountHolder
     };
 
     try {
@@ -365,6 +380,12 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-4">
           <span className="text-xs text-[#c9bfbc] hidden sm:inline">Logged in: <strong>{adminUser?.username}</strong></span>
           <button
+            onClick={() => setScannerOpen(true)}
+            className="flex items-center gap-1.5 bg-[#d4af37]/10 hover:bg-[#d4af37]/20 border border-[#d4af37]/35 text-[#d4af37] text-xs px-3 py-1.5 rounded transition cursor-pointer"
+          >
+            <QrCode size={13} /> Scan QR Code
+          </button>
+          <button
             onClick={handleLogout}
             className="flex items-center gap-1.5 bg-red-950/60 hover:bg-red-900 border border-red-500/20 text-red-300 text-xs px-3 py-1.5 rounded transition cursor-pointer"
           >
@@ -372,6 +393,12 @@ export default function AdminDashboard() {
           </button>
         </div>
       </header>
+
+      {/* Admin QR Code Scanner Modal */}
+      <AdminScannerModal
+        isOpen={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+      />
 
       {/* Main Body container */}
       <div className="flex-1 flex flex-col md:flex-row">
@@ -936,12 +963,70 @@ export default function AdminDashboard() {
                       <span className="text-[10px] text-[#8c7e7a] block mt-1">Provide a transparent background PNG or high-quality image URL representing the chef.</span>
                     </div>
 
+                    {/* SECTION: CBE CREDENTIALS */}
+                    <div className="border-t border-[#d4af37]/15 pt-5 space-y-4">
+                      <h4 className="font-serif text-sm font-bold text-[#d4af37] flex items-center gap-1.5">
+                        <Landmark size={15} /> Commercial Bank of Ethiopia (CBE) Merchant Details
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">CBE Account Number</label>
+                          <input
+                            type="text"
+                            value={heroForm.cbeAccountNo}
+                            onChange={(e) => setHeroForm({ ...heroForm, cbeAccountNo: e.target.value })}
+                            placeholder="e.g. 1000444555666"
+                            className="input-field font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">CBE Account Holder Name</label>
+                          <input
+                            type="text"
+                            value={heroForm.cbeAccountHolder}
+                            onChange={(e) => setHeroForm({ ...heroForm, cbeAccountHolder: e.target.value })}
+                            placeholder="e.g. Biruk Tigistu Lugaba"
+                            className="input-field"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* SECTION: TELEBIRR CREDENTIALS */}
+                    <div className="border-t border-[#d4af37]/15 pt-5 space-y-4">
+                      <h4 className="font-serif text-sm font-bold text-[#d4af37] flex items-center gap-1.5">
+                        <QrCode size={15} /> Telebirr Mobile Pay Merchant Details
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Telebirr Merchant Phone / ID</label>
+                          <input
+                            type="text"
+                            value={heroForm.telebirrPhone}
+                            onChange={(e) => setHeroForm({ ...heroForm, telebirrPhone: e.target.value })}
+                            placeholder="e.g. 251911378448"
+                            className="input-field font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Telebirr Account Holder Name</label>
+                          <input
+                            type="text"
+                            value={heroForm.telebirrAccountHolder}
+                            onChange={(e) => setHeroForm({ ...heroForm, telebirrAccountHolder: e.target.value })}
+                            placeholder="e.g. Kibrom Haileselassie Abreha"
+                            className="input-field"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
                     <button
                       type="submit"
                       disabled={heroLoading}
-                      className="w-full gold-btn py-2.5 rounded font-semibold text-sm transition mt-6 cursor-pointer"
+                      className="w-full gold-btn py-2.5 rounded font-semibold text-sm transition mt-8 cursor-pointer"
                     >
-                      {heroLoading ? "Updating Texts..." : "Apply Text Changes"}
+                      {heroLoading ? "Updating Settings..." : "Save Settings & Merchant Details"}
                     </button>
                   </form>
                 </div>

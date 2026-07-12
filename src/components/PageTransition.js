@@ -7,31 +7,34 @@ export default function PageTransition({ children }) {
   const pathname = usePathname();
   const [displayChildren, setDisplayChildren] = useState(children);
   const [isWiping, setIsWiping] = useState(false);
-  const isFirstMount = useRef(true);
+  const prevPathname = useRef(pathname);
 
+  // Sync children when they change on the same page
   useEffect(() => {
-    if (isFirstMount.current) {
-      isFirstMount.current = false;
-      return;
-    }
-
-    // 1. Slide curtain in to cover screen
-    setIsWiping(true);
-    
-    // 2. Swap page children when screen is covered (at 350ms)
-    const swapTimer = setTimeout(() => {
+    if (pathname === prevPathname.current) {
       setDisplayChildren(children);
-    }, 350);
+    }
+  }, [children, pathname]);
 
-    // 3. Slide curtain away (at 700ms total)
-    const endTimer = setTimeout(() => {
-      setIsWiping(false);
-    }, 700);
+  // Handle transition when pathname changes
+  useEffect(() => {
+    if (pathname !== prevPathname.current) {
+      setIsWiping(true);
+      
+      const swapTimer = setTimeout(() => {
+        setDisplayChildren(children);
+        prevPathname.current = pathname;
+      }, 350);
 
-    return () => {
-      clearTimeout(swapTimer);
-      clearTimeout(endTimer);
-    };
+      const endTimer = setTimeout(() => {
+        setIsWiping(false);
+      }, 700);
+
+      return () => {
+        clearTimeout(swapTimer);
+        clearTimeout(endTimer);
+      };
+    }
   }, [pathname, children]);
 
   return (

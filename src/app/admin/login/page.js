@@ -44,7 +44,12 @@ export default function AdminLogin() {
       if (data.success) {
         localStorage.setItem("adminToken", data.token);
         localStorage.setItem("adminUser", JSON.stringify(data.admin));
-        router.push("/admin/dashboard");
+        const redirect = new URLSearchParams(window.location.search).get("redirect");
+        if (redirect) {
+          router.push(redirect);
+        } else {
+          router.push("/admin/dashboard");
+        }
       } else {
         setError(data.error || "Authentication failed.");
       }

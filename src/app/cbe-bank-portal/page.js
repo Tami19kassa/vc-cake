@@ -77,8 +77,8 @@ export default function CbeBankPortal() {
               <Landmark size={28} />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-wide">COMMERCIAL BANK OF ETHIOPIA</h1>
-              <p className="text-xs text-blue-200">Merchant Payment Portal (Simulation Engine)</p>
+              <h1 className="text-xl font-bold tracking-wide">CBE & TELEBIRR SIMULATOR</h1>
+              <p className="text-xs text-blue-200">Merchant Payment simulation engine for automated verification</p>
             </div>
           </div>
           <button
@@ -96,10 +96,10 @@ export default function CbeBankPortal() {
           {/* Creator Form */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 self-start">
             <h2 className="text-lg font-semibold text-blue-900 border-b pb-3 mb-4 flex items-center gap-2">
-              <PlusCircle size={20} /> Credit Mock Account
+              <PlusCircle size={20} /> Credit Mock Ledger
             </h2>
             <p className="text-xs text-gray-500 mb-4">
-              Simulate an incoming CBE transfer. Once submitted, customers can verify this reference number on the Cake website.
+              Simulate an incoming CBE transfer (e.g. starting with FT) or Telebirr mobile payment (e.g. starting with TX). Once injected, customers can instantly verify it.
             </p>
 
             {error && <div className="bg-red-50 text-red-700 p-3 rounded mb-4 text-sm font-medium">{error}</div>}
@@ -113,7 +113,7 @@ export default function CbeBankPortal() {
                 <input
                   type="text"
                   name="referenceId"
-                  placeholder="e.g. FT2608456789"
+                  placeholder="e.g. FT2608456789 or TX2608111222"
                   value={form.referenceId}
                   onChange={handleChange}
                   className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 bg-gray-50 uppercase"
@@ -161,8 +161,8 @@ export default function CbeBankPortal() {
           <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 mb-4 gap-4">
               <div>
-                <h2 className="text-lg font-bold text-gray-800">CBE Incoming Transactions Log</h2>
-                <p className="text-xs text-gray-500">Live HTML rendering targeted by cheerio scraper engine</p>
+                <h2 className="text-lg font-bold text-gray-800">Incoming Payment Ledger</h2>
+                <p className="text-xs text-gray-500">Live simulation feed scanned by the automated verify parser</p>
               </div>
               <div className="relative w-full sm:w-64">
                 <input

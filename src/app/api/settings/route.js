@@ -22,14 +22,23 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { title, subtitle, ctaText, imageUrl } = body;
+    const { title, subtitle, ctaText, imageUrl, cbeAccountNo, cbeAccountHolder, telebirrPhone, telebirrAccountHolder } = body;
 
     if (!title || !subtitle || !ctaText) {
       return NextResponse.json({ success: false, error: "Missing required settings fields." }, { status: 400 });
     }
 
-    const updated = await db.updateHeroSettings(title, subtitle, ctaText, imageUrl || "");
-    return NextResponse.json({ success: true, settings: updated, message: "Hero settings updated successfully!" });
+    const updated = await db.updateHeroSettings(
+      title,
+      subtitle,
+      ctaText,
+      imageUrl || "",
+      cbeAccountNo,
+      cbeAccountHolder,
+      telebirrPhone,
+      telebirrAccountHolder
+    );
+    return NextResponse.json({ success: true, settings: updated, message: "Settings updated successfully!" });
   } catch (error) {
     console.error("POST settings error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
