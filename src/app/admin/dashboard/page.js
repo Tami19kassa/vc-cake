@@ -20,6 +20,8 @@ import {
   AlertCircle,
   QrCode,
   Layers,
+  Star,
+  Quote,
   Upload
 } from "lucide-react";
 import AdminScannerModal from "@/components/AdminScannerModal";
@@ -108,6 +110,18 @@ export default function AdminDashboard() {
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [prodLoading, setProdLoading] = useState(false);
   const [prodMsg, setProdMsg] = useState("");
+ 
+  // Testimonials state
+  const [testimonies, setTestimonies] = useState([]);
+  const [testForm, setTestForm] = useState({
+    id: null,
+    clientName: "",
+    text: "",
+    rating: "5",
+    avatarUrl: ""
+  });
+  const [testLoading, setTestLoading] = useState(false);
+  const [testMsg, setTestMsg] = useState("");
 
   // Filtering & Sorting State
   const [search, setSearch] = useState("");
@@ -231,14 +245,77 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchTestimonies = async () => {
+    try {
+      const res = await fetch("/api/testimonies");
+      const resData = await res.json();
+      if (resData.success) {
+        setTestimonies(resData.testimonies);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     if (token) {
       fetchDashboardData(token);
       fetchArticles();
       fetchHeroSettings();
       fetchProducts();
+      fetchTestimonies();
     }
   }, [token]);
+
+  const handleTestimonySubmit = async (e) => {
+    e.preventDefault();
+    setTestMsg("");
+    setTestLoading(true);
+
+    try {
+      const res = await fetch("/api/testimonies", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(testForm)
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        setTestMsg(resData.message);
+        setTestForm({ id: null, clientName: "", text: "", rating: "5", avatarUrl: "" });
+        fetchTestimonies();
+      } else {
+        setTestMsg("Error: " + resData.error);
+      }
+    } catch (err) {
+      setTestMsg("Failed to process testimonial.");
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
+  const handleTestimonyDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this testimonial?")) return;
+    try {
+      const res = await fetch(`/api/testimonies?id=${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        alert("Testimonial deleted successfully.");
+        fetchTestimonies();
+      } else {
+        alert("Error: " + resData.error);
+      }
+    } catch (err) {
+      console.error("Failed to delete testimonial:", err);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
@@ -649,6 +726,7 @@ export default function AdminDashboard() {
               { id: "orders", label: "Cake Orders", icon: <Cake size={15} />, count: data.orders.length },
               { id: "products", label: "Catalog", icon: <Layers size={15} />, count: products.length },
               { id: "articles", label: "Vlogs/Blogs", icon: <FileText size={15} />, count: articles.length },
+              { id: "testimonies", label: "Testimonials", icon: <Quote size={15} />, count: testimonies.length },
               { id: "settings", label: "Settings", icon: <Settings size={15} /> },
               { id: "contacts", label: "Inquiries", icon: <MessageSquare size={15} />, count: data.contacts.length }
             ].map((tab) => (
@@ -1932,6 +2010,145 @@ export default function AdminDashboard() {
                                       <Trash2 size={13} />
                                     </button>
                                   </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: TESTIMONIALS MANAGEMENT */}
+              {activeTab === "testimonies" && (
+                <div className="space-y-6">
+                  {/* Create Testimonial Form */}
+                  <div className="bg-[#120a09] border border-[#d4af37]/10 rounded-lg p-5">
+                    <h3 className="font-serif text-lg font-bold text-[#d4af37] border-b border-[#d4af37]/10 pb-3 mb-4 flex items-center gap-2">
+                      <Quote size={18} /> Add New Graduate Testimonial
+                    </h3>
+
+                    {testMsg && <div className="bg-[#d4af37]/10 border border-[#d4af37]/35 text-[#d4af37] p-3 rounded mb-4 text-xs font-semibold">{testMsg}</div>}
+
+                    <form onSubmit={handleTestimonySubmit} className="space-y-4 text-sm">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="md:col-span-2">
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Graduate / Client Name</label>
+                          <input
+                            type="text"
+                            value={testForm.clientName}
+                            onChange={(e) => setTestForm({ ...testForm, clientName: e.target.value })}
+                            placeholder="e.g. Mahlet Kebede"
+                            className="input-field"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Rating (Stars)</label>
+                          <select
+                            value={testForm.rating}
+                            onChange={(e) => setTestForm({ ...testForm, rating: e.target.value })}
+                            className="input-field bg-[#0c0706] cursor-pointer"
+                          >
+                            <option value="5">5 Stars</option>
+                            <option value="4">4 Stars</option>
+                            <option value="3">3 Stars</option>
+                            <option value="2">2 Stars</option>
+                            <option value="1">1 Star</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div className="md:col-span-2">
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Avatar URL (Optional placeholder)</label>
+                          <input
+                            type="text"
+                            value={testForm.avatarUrl}
+                            onChange={(e) => setTestForm({ ...testForm, avatarUrl: e.target.value })}
+                            placeholder="e.g. https://images.unsplash.com/photo-... or leave blank for default"
+                            className="input-field font-mono"
+                          />
+                        </div>
+                        <div>
+                          <button
+                            type="submit"
+                            disabled={testLoading}
+                            className="gold-btn w-full py-3 rounded-lg font-bold text-xs uppercase cursor-pointer"
+                          >
+                            {testLoading ? "Adding..." : "Add Testimonial"}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Testimonial Text (Supports Amharic / English or plain text)</label>
+                        <textarea
+                          value={testForm.text}
+                          onChange={(e) => setTestForm({ ...testForm, text: e.target.value })}
+                          placeholder="e.g. The baking course was amazing! The chefs are top-notch professionals."
+                          rows="3"
+                          className="input-field font-serif"
+                          required
+                        />
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Testimonies Table List */}
+                  <div className="bg-[#120a09] border border-[#d4af37]/10 rounded-lg p-5">
+                    <h3 className="font-serif text-lg font-bold text-white border-b border-[#d4af37]/10 pb-3 mb-4">
+                      Active Testimonials List
+                    </h3>
+
+                    {testimonies.length === 0 ? (
+                      <div className="text-center text-[#8c7e7a] py-12">No testimonials found in database.</div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-sm">
+                          <thead>
+                            <tr className="border-b border-[#d4af37]/15 text-[#8c7e7a] text-xs uppercase font-semibold">
+                              <th className="px-4 py-3">Client</th>
+                              <th className="px-4 py-3">Testimonial Text</th>
+                              <th className="px-4 py-3 text-center">Rating</th>
+                              <th className="px-4 py-3 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {testimonies.map((test) => (
+                              <tr key={test.id} className="border-b border-[#d4af37]/5 hover:bg-white/[0.02]">
+                                <td className="px-4 py-3 text-white font-serif flex items-center gap-3">
+                                  <img 
+                                    src={test.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150&auto=format&fit=crop"} 
+                                    alt={test.clientName} 
+                                    className="w-8 h-8 rounded-full object-cover border border-[#d4af37]/25" 
+                                  />
+                                  <span>{test.clientName}</span>
+                                </td>
+                                <td className="px-4 py-3 text-[#c9bfbc] font-serif max-w-md whitespace-pre-line text-xs italic">
+                                  "{test.text}"
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <div className="flex justify-center gap-0.5">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star
+                                        key={i}
+                                        size={12}
+                                        className={i < test.rating ? "text-amber-500 fill-amber-500" : "text-gray-600"}
+                                      />
+                                    ))}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <button
+                                    onClick={() => handleTestimonyDelete(test.id)}
+                                    className="border border-red-500/20 hover:bg-red-500/10 text-red-400 p-1.5 rounded cursor-pointer"
+                                    title="Delete Testimonial"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
                                 </td>
                               </tr>
                             ))}

@@ -175,22 +175,17 @@ export default function Home() {
               {/* Spacer to clear fixed navbar */}
               <div className="h-12 lg:h-20 shrink-0" />
               
-              {/* Badge */}
-              <div className="text-center lg:text-left">
-                <span className="academy-badge text-[#4a2c11] border-[#4a2c11]/15 bg-[#4a2c11]/5">
-                  {t.badgeHero}
-                </span>
-              </div>
-              
               {/* Main Heading */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] text-[#2c1d11] font-serif tracking-tight text-center lg:text-left">
+              <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-serif text-[#2c1d11] tracking-tight text-center lg:text-left leading-[1.08] drop-shadow-sm font-light">
                 {lang === "en" ? (
                   <>
-                    Made with <span className="text-[#c5a059] italic font-normal font-serif">love</span>,<br />baked to perfection.
+                    Made with <span className="text-[#c5a059] italic font-serif font-semibold relative inline-block">love<span className="absolute bottom-1 left-0 right-0 h-[2px] bg-[#c5a059]/30 rounded-full" /></span>,<br />
+                    <span className="font-extrabold font-sans text-transparent bg-clip-text bg-gradient-to-r from-[#4a2c11] to-[#b89047]">baked to perfection.</span>
                   </>
                 ) : (
                   <>
-                    በፍቅር ተዘጋጅቶ፣<br /><span className="text-[#c5a059] italic font-normal font-serif">በደስታ</span> የተጋገረ።
+                    በፍቅር ተዘጋጅቶ፣<br />
+                    <span className="font-extrabold font-sans text-transparent bg-clip-text bg-gradient-to-r from-[#4a2c11] to-[#b89047]">በደስታ የተጋገረ።</span>
                   </>
                 )}
               </h1>
@@ -214,11 +209,12 @@ export default function Home() {
                   { label: lang === "en" ? "CUPCAKES" : "ኩባያ ኬክ", icon: <Sparkles size={18} /> },
                   { label: lang === "en" ? "PASTRIES" : "ጣፋጮች", icon: <Award size={18} /> }
                 ].map((item, idx) => (
-                  <div key={idx} className="flex flex-col items-center gap-1.5">
-                    <div className="w-12 h-12 rounded-full border border-[#4a2c11]/15 text-[#4a2c11] flex items-center justify-center bg-[#fdfbf7] shadow-sm hover:border-[#c5a059] hover:text-[#c5a059] transition duration-300">
-                      {item.icon}
+                  <div key={idx} className="flex flex-col items-center gap-2 group cursor-pointer">
+                    <div className="w-14 h-14 rounded-full border border-[#4a2c11]/15 text-[#4a2c11] flex items-center justify-center bg-[#fdfbf7] shadow-md transition-all duration-300 group-hover:border-[#c5a059] group-hover:text-[#c5a059] group-hover:scale-110 group-hover:ring-4 group-hover:ring-[#c5a059]/20 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-[#c5a059]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="relative z-10 transition-transform duration-300 group-hover:rotate-12">{item.icon}</div>
                     </div>
-                    <span className="text-[9px] font-bold tracking-widest text-[#4a2c11] font-sans">{item.label}</span>
+                    <span className="text-[10px] font-bold tracking-[0.2em] text-[#4a2c11] font-sans transition-colors duration-300 group-hover:text-[#c5a059] uppercase">{item.label}</span>
                   </div>
                 ))}
               </div>
@@ -273,8 +269,37 @@ export default function Home() {
               <img
                 src={dbImageUrl}
                 alt="Academy Chef"
-                className="absolute inset-0 w-full h-full object-cover object-center z-20 transition-transform duration-500 hover:scale-102"
+                className="absolute inset-0 w-full h-full object-cover object-center z-20 transition-transform duration-500 hover:scale-[1.01]"
               />
+
+              {/* Floating Glassmorphic Stats Badge Card */}
+              <div className="absolute bottom-8 left-8 right-8 lg:bottom-24 lg:left-12 lg:right-auto lg:w-[320px] z-35 bg-white/75 backdrop-blur-xl border border-[#d4af37]/35 p-5 rounded-2xl shadow-xl flex flex-col gap-3 animate-float transition duration-300 hover:bg-white/85">
+                <div className="flex items-center justify-between border-b border-[#4a2c11]/15 pb-2">
+                  <span className="font-serif text-[11px] font-bold uppercase tracking-wider text-[#4a2c11] flex items-center gap-1.5">
+                    <Award size={12} className="text-[#c5a059]" /> {lang === "en" ? "Academy Credentials" : "የአካዳሚው ስኬቶች"}
+                  </span>
+                  <span className="bg-[#c5a059]/20 text-[#2c1d11] text-[8px] font-bold uppercase px-2 py-0.5 rounded font-mono">5-STAR</span>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="space-y-0.5">
+                    <span className="block font-serif text-lg font-bold text-[#4a2c11] leading-none">4.9 ★</span>
+                    <span className="block text-[8px] uppercase tracking-wider text-[#8c7e7a]">Rating</span>
+                  </div>
+                  <div className="border-x border-[#4a2c11]/10 space-y-0.5">
+                    <span className="block font-serif text-lg font-bold text-[#4a2c11] leading-none">2.5K+</span>
+                    <span className="block text-[8px] uppercase tracking-wider text-[#8c7e7a]">{lang === "en" ? "Grads" : "ተመራቂዎች"}</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="block font-serif text-lg font-bold text-[#c5a059] leading-none">#1</span>
+                    <span className="block text-[8px] uppercase tracking-wider text-[#8c7e7a]">{lang === "en" ? "Academy" : "አካዳሚ"}</span>
+                  </div>
+                </div>
+                
+                <p className="text-[10px] text-[#5c4638] leading-tight text-center italic border-t border-[#4a2c11]/5 pt-2">
+                  {lang === "en" ? "Empowering culinary artists since 2018." : "ከ2010 ጀምሮ የጣፋጭ ባለሙያዎችን ማብቃት።"}
+                </p>
+              </div>
 
               {/* Baked Stamp Label */}
               <div className="absolute top-8 right-12 z-30 bg-[#4a2c11] text-[#fdfbf7] px-2.5 py-1.5 rounded-md border border-[#c5a059]/30 text-[8px] font-bold tracking-widest uppercase transform rotate-6 shadow-md font-sans">

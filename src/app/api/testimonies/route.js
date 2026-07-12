@@ -37,3 +37,18 @@ export async function POST(request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ success: false, error: "Missing testimony ID." }, { status: 400 });
+    }
+    await db.deleteTestimony(parseInt(id));
+    return NextResponse.json({ success: true, message: "Testimonial deleted successfully!" });
+  } catch (error) {
+    console.error("DELETE testimonies error:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

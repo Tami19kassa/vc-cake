@@ -217,3 +217,58 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Custom leather binding gradient styling */
+.leather-spine {
+  background: linear-gradient(90deg, #180d0b 0%, #301a16 35%, #180d0b 70%, #1f1311 100%);
+  box-shadow: 
+    inset 2px 0 5px rgba(255, 255, 255, 0.05),
+    inset -2px 0 5px rgba(0, 0, 0, 0.4),
+    3px 0 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Floating animation */
+@keyframes floatAnimation {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+}
+
+.animate-float {
+  animation: floatAnimation 4s ease-in-out infinite;
+}
+
+/* Subtle slower float for cards */
+@keyframes floatCard {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-float-card {
+  animation: floatCard 6s ease-in-out infinite;
+}
+
+/* Gold corner borders styling helper */
+.gold-corners {
+  position: relative;
+}
+.gold-corners::before,
+.gold-corners::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: #d4af37;
+  border-style: solid;
+  pointer-events: none;
+  opacity: 0.75;
+}
+.gold-corners::before {
+  top: 8px;
+  left: 8px;
+  border-width: 1px 0 0 1px;
+}
+.gold-corners::after {
+  bottom: 8px;
+  right: 8px;
+  border-width: 0 1px 1px 0;
+}

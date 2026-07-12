@@ -1045,6 +1045,16 @@ export const db = {
     return { id: result.insertId, ...testData };
   },
 
+  async deleteTestimony(id) {
+    const config = getDBConfig();
+    if (config.type === 'json') {
+      return await jsonQuery('testimonies', 'delete', id);
+    }
+    const myPool = getPool();
+    await myPool.query('DELETE FROM testimonies WHERE id = ?', [id]);
+    return true;
+  },
+
   // Contact Messages
   async createContactMessage(data) {
     const config = getDBConfig();

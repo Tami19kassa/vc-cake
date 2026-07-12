@@ -58,17 +58,22 @@ export default function GraduateBook({ testimonies, lang }) {
           }}
         >
           {/* Background Book Spine spine binding */}
-          <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-4 bg-[#1f1311] z-30 shadow-inner hidden md:block" />
+          <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-6 leather-spine z-30 hidden md:flex flex-col justify-around py-8 items-center border-l border-r border-[#c5a059]/25">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="w-full h-1 bg-gradient-to-r from-transparent via-[#d4af37]/60 to-transparent shadow" />
+            ))}
+          </div>
 
           {/* PAGE 1: LEFT PAGE (Graduate 1) */}
           <div 
-            className="relative bg-[#fcf9f2] text-[#2c1d11] p-6 md:p-8 rounded-t-xl md:rounded-tr-none md:rounded-l-xl shadow-[inset_-10px_0_20px_rgba(0,0,0,0.06)] border-r border-black/5 flex flex-col justify-between"
+            className="relative bg-[#fcf9f2] text-[#2c1d11] p-6 md:p-8 rounded-t-xl md:rounded-tr-none md:rounded-l-xl shadow-[inset_-10px_0_20px_rgba(0,0,0,0.06)] border-r border-black/5 flex flex-col justify-between gold-corners"
             style={{
               backgroundImage: "radial-gradient(#f7f2e8 1px, transparent 0), radial-gradient(#f7f2e8 1px, transparent 0)",
               backgroundSize: "20px 20px",
               backgroundPosition: "0 0, 10px 10px"
             }}
           >
+            <div className="absolute inset-2 border border-[#d4af37]/10 rounded pointer-events-none" />
             {/* Page header and decorative quote mark */}
             <div className="space-y-4">
               <div className="flex justify-between items-center border-b border-[#2c1d11]/15 pb-2">
@@ -82,9 +87,19 @@ export default function GraduateBook({ testimonies, lang }) {
               
               {bookTestimonies[0] ? (
                 <div className="space-y-4 -mt-4">
-                  <p className="font-serif text-sm md:text-base leading-relaxed italic text-[#3d2e24]">
-                    "{getTranslation(bookTestimonies[0].text, lang)}"
-                  </p>
+                  {(() => {
+                    const textStr = getTranslation(bookTestimonies[0].text, lang);
+                    const firstLetter = textStr.charAt(0);
+                    const restOfText = textStr.slice(1);
+                    return (
+                      <p className="font-serif text-sm md:text-[15px] leading-relaxed italic text-[#3d2e24]">
+                        <span className="float-left text-4xl font-bold font-serif text-[#c5a059] mr-2 leading-[0.8] mt-1 select-none">
+                          {firstLetter}
+                        </span>
+                        {restOfText}
+                      </p>
+                    );
+                  })()}
                   
                   {/* Rating */}
                   <div className="flex gap-0.5">
@@ -120,13 +135,14 @@ export default function GraduateBook({ testimonies, lang }) {
 
           {/* PAGE 2: RIGHT PAGE (Graduate 2 & 3) */}
           <div 
-            className="relative bg-[#fcf9f2] text-[#2c1d11] p-6 md:p-8 rounded-b-xl md:rounded-bl-none md:rounded-r-xl shadow-[inset_10px_0_20px_rgba(0,0,0,0.06)] flex flex-col justify-between"
+            className="relative bg-[#fcf9f2] text-[#2c1d11] p-6 md:p-8 rounded-b-xl md:rounded-bl-none md:rounded-r-xl shadow-[inset_10px_0_20px_rgba(0,0,0,0.06)] flex flex-col justify-between gold-corners"
             style={{
               backgroundImage: "radial-gradient(#f7f2e8 1px, transparent 0), radial-gradient(#f7f2e8 1px, transparent 0)",
               backgroundSize: "20px 20px",
               backgroundPosition: "0 0, 10px 10px"
             }}
           >
+            <div className="absolute inset-2 border border-[#d4af37]/10 rounded pointer-events-none" />
             <div className="space-y-6">
               <div className="flex justify-between items-center border-b border-[#2c1d11]/15 pb-2">
                 <span className="font-serif text-xs font-bold tracking-widest text-[#d4af37] uppercase">
@@ -202,12 +218,13 @@ export default function GraduateBook({ testimonies, lang }) {
             {extraTestimonies.map((tItem, index) => (
               <div
                 key={tItem.id}
-                className="shrink-0 w-[290px] sm:w-[320px] bg-[#fdfbf7] text-[#2c1d11] p-6 rounded-xl border border-[#2c1d11]/10 shadow-md snap-start flex flex-col justify-between"
+                className="shrink-0 w-[290px] sm:w-[320px] bg-white/85 backdrop-blur-md text-[#2c1d11] p-6 rounded-2xl border border-[#d4af37]/20 shadow-lg snap-start flex flex-col justify-between transition-all duration-300 hover:border-[#c5a059] hover:-translate-y-1 hover:shadow-xl relative overflow-hidden"
                 style={{
                   backgroundImage: "linear-gradient(#2c1d11/5 1px, transparent 1px)",
                   backgroundSize: "100% 24px"
                 }}
               >
+                <div className="absolute inset-1 border border-[#d4af37]/5 rounded-xl pointer-events-none" />
                 <div className="space-y-4">
                   <div className="flex justify-between items-center border-b border-[#2c1d11]/10 pb-2">
                     <span className="text-[9px] font-mono font-bold text-[#d4af37] uppercase">Story #{index + 4}</span>
