@@ -59,12 +59,18 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
 
   // Calculate cost dynamically
   useEffect(() => {
-    const size = parseFloat(form.sizeKg) || 1;
-    const layers = parseInt(form.layers) || 1;
     const selectedProduct = products.find(p => p.name === form.cakeType);
+    const isCake = selectedProduct ? selectedProduct.category === "Cakes" : true;
+    
+    const size = parseFloat(form.sizeKg) || 1;
+    const layers = isCake ? (parseInt(form.layers) || 1) : 1;
     const basePrice = selectedProduct ? selectedProduct.basePrice : 800;
     const layerPrice = settings?.layerPrice || 300;
-    const price = size * basePrice + (layers - 1) * layerPrice;
+    
+    const price = isCake 
+      ? (size * basePrice + (layers - 1) * layerPrice)
+      : (size * basePrice);
+      
     setForm((f) => ({ ...f, amountPaid: price.toString() }));
   }, [form.sizeKg, form.layers, form.cakeType, products, settings]);
 
@@ -436,82 +442,124 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
                 )}
               </div>
 
-              <div>
-                <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Weight (Size in Kg)</label>
-                <select
-                  name="sizeKg"
-                  value={form.sizeKg}
-                  onChange={handleChange}
-                  className="input-field bg-[#0c0706] cursor-pointer"
-                >
-                  <option value="1">1 Kg (Small - {(products.find(p => p.name === form.cakeType)?.basePrice || 800)} ETB)</option>
-                  <option value="2">2 Kg (Standard - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 2} ETB)</option>
-                  <option value="3">3 Kg (Medium - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 3} ETB)</option>
-                  <option value="4">4 Kg (Large - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 4} ETB)</option>
-                  <option value="5">5 Kg (Extra Large - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 5} ETB)</option>
-                  <option value="7">7 Kg (Grand Size - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 7} ETB)</option>
-                  <option value="10">10 Kg (Premium Size - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 10} ETB)</option>
-                </select>
-              </div>
+              {(() => {
+                const selectedProduct = products.find(p => p.name === form.cakeType);
+                const isCake = selectedProduct ? selectedProduct.category === "Cakes" : true;
 
-              <div>
-                <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Number of Layers</label>
-                <select
-                  name="layers"
-                  value={form.layers}
-                  onChange={handleChange}
-                  className="input-field bg-[#0c0706] cursor-pointer"
-                >
-                  <option value="1">1 Layer (Flat)</option>
-                  <option value="2">2 Layers (+{settings?.layerPrice || 300} ETB)</option>
-                  <option value="3">3 Layers (+{(settings?.layerPrice || 300) * 2} ETB)</option>
-                  <option value="4">4 Layers (+{(settings?.layerPrice || 300) * 3} ETB)</option>
-                </select>
-              </div>
+                return (
+                  <>
+                    {isCake ? (
+                      <>
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Weight (Size in Kg)</label>
+                          <select
+                            name="sizeKg"
+                            value={form.sizeKg}
+                            onChange={handleChange}
+                            className="input-field bg-[#0c0706] cursor-pointer"
+                          >
+                            <option value="1">1 Kg (Small - {(products.find(p => p.name === form.cakeType)?.basePrice || 800)} ETB)</option>
+                            <option value="2">2 Kg (Standard - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 2} ETB)</option>
+                            <option value="3">3 Kg (Medium - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 3} ETB)</option>
+                            <option value="4">4 Kg (Large - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 4} ETB)</option>
+                            <option value="5">5 Kg (Extra Large - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 5} ETB)</option>
+                            <option value="7">7 Kg (Grand Size - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 7} ETB)</option>
+                            <option value="10">10 Kg (Premium Size - {(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 10} ETB)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Number of Layers</label>
+                          <select
+                            name="layers"
+                            value={form.layers}
+                            onChange={handleChange}
+                            className="input-field bg-[#0c0706] cursor-pointer"
+                          >
+                            <option value="1">1 Layer (Flat)</option>
+                            <option value="2">2 Layers (+{settings?.layerPrice || 300} ETB)</option>
+                            <option value="3">3 Layers (+{(settings?.layerPrice || 300) * 2} ETB)</option>
+                            <option value="4">4 Layers (+{(settings?.layerPrice || 300) * 3} ETB)</option>
+                          </select>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="col-span-2">
+                        <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Quantity (Packs / Units)</label>
+                        <select
+                          name="sizeKg"
+                          value={form.sizeKg}
+                          onChange={handleChange}
+                          className="input-field bg-[#0c0706] cursor-pointer"
+                        >
+                          <option value="1">1 Pack ({(products.find(p => p.name === form.cakeType)?.basePrice || 800)} ETB)</option>
+                          <option value="2">2 Packs ({(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 2} ETB)</option>
+                          <option value="3">3 Packs ({(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 3} ETB)</option>
+                          <option value="5">5 Packs ({(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 5} ETB)</option>
+                          <option value="10">10 Packs ({(products.find(p => p.name === form.cakeType)?.basePrice || 800) * 10} ETB)</option>
+                        </select>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Flavor profile</label>
-                <select
-                  name="flavor"
-                  value={form.flavor}
-                  onChange={handleChange}
-                  className="input-field bg-[#0c0706] cursor-pointer"
-                >
-                  <option value="Chocolate Fudge">Chocolate Fudge</option>
-                  <option value="Vanilla Strawberry">Vanilla Strawberry Velvet</option>
-                  <option value="Red Velvet Cream">Red Velvet Cream Cheese</option>
-                  <option value="Salted Caramel Fudge">Salted Caramel Toffee</option>
-                  <option value="Mocha Espresso">Mocha Coffee Espresso</option>
-                  <option value="Bavarian Fruit Cream">Bavarian Fruit Mix Cream</option>
-                </select>
-              </div>
+            {(() => {
+              const selectedProduct = products.find(p => p.name === form.cakeType);
+              const isCake = selectedProduct ? selectedProduct.category === "Cakes" : true;
 
-              <div>
-                <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Delivery/Pickup Date</label>
-                <input
-                  type="date"
-                  name="deliveryDate"
-                  value={form.deliveryDate}
-                  onChange={handleChange}
-                  className="input-field cursor-pointer text-white fill-white"
-                  required
-                />
-              </div>
-            </div>
+              return (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {isCake && (
+                      <div>
+                        <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Flavor profile</label>
+                        <select
+                          name="flavor"
+                          value={form.flavor}
+                          onChange={handleChange}
+                          className="input-field bg-[#0c0706] cursor-pointer"
+                        >
+                          <option value="Chocolate Fudge">Chocolate Fudge</option>
+                          <option value="Vanilla Strawberry">Vanilla Strawberry Velvet</option>
+                          <option value="Red Velvet Cream">Red Velvet Cream Cheese</option>
+                          <option value="Salted Caramel Fudge">Salted Caramel Toffee</option>
+                          <option value="Mocha Espresso">Mocha Coffee Espresso</option>
+                          <option value="Bavarian Fruit Cream">Bavarian Fruit Mix Cream</option>
+                        </select>
+                      </div>
+                    )}
 
-            <div>
-              <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Decoration Text & Custom Design Details</label>
-              <textarea
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                placeholder="e.g. Write 'Happy 5th Birthday Aster!' with pink flowers design."
-                className="input-field min-h-[70px] py-2"
-                required
-              />
-            </div>
+                    <div className={isCake ? "" : "col-span-2"}>
+                      <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Delivery/Pickup Date</label>
+                      <input
+                        type="date"
+                        name="deliveryDate"
+                        value={form.deliveryDate}
+                        onChange={handleChange}
+                        className="input-field cursor-pointer text-white fill-white"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">
+                      {isCake ? "Decoration Text & Custom Design Details" : "Special Requests / Delivery Notes (Optional)"}
+                    </label>
+                    <textarea
+                      name="description"
+                      value={form.description}
+                      onChange={handleChange}
+                      placeholder={isCake ? "e.g. Write 'Happy 5th Birthday Aster!' with pink flowers design." : "e.g. Please pack in separate boxes, deliver after 2 PM."}
+                      className="input-field min-h-[70px] py-2"
+                      required={isCake}
+                    />
+                  </div>
+                </>
+              );
+            })()}
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>

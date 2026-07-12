@@ -385,7 +385,7 @@ export const initDB = async () => {
         title TEXT NOT NULL,
         subtitle TEXT NOT NULL,
         ctaText VARCHAR(255) NOT NULL,
-        imageUrl TEXT,
+        imageUrl LONGTEXT,
         cbeAccountNo VARCHAR(255) DEFAULT '1000444555666',
         cbeAccountHolder VARCHAR(255) DEFAULT 'Biruk Tigistu Lugaba',
         telebirrPhone VARCHAR(255) DEFAULT '251911378448',
@@ -395,6 +395,16 @@ export const initDB = async () => {
     `);
 
     // Dynamic schema migrations for existing database tables
+    try {
+      await connection.query(`ALTER TABLE hero_settings MODIFY COLUMN imageUrl LONGTEXT`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE products MODIFY COLUMN image LONGTEXT`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE articles MODIFY COLUMN mediaUrl LONGTEXT`);
+    } catch (e) {}
+
     try {
       await connection.query(`ALTER TABLE hero_settings ADD COLUMN cbeAccountNo VARCHAR(255) DEFAULT '1000444555666'`);
     } catch (e) {}
@@ -462,7 +472,7 @@ export const initDB = async () => {
         name VARCHAR(255) NOT NULL,
         category VARCHAR(255) NOT NULL,
         basePrice DOUBLE NOT NULL,
-        image TEXT,
+        image LONGTEXT,
         stock INT DEFAULT 10,
         isEnabled BOOLEAN DEFAULT TRUE,
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -507,7 +517,7 @@ export const initDB = async () => {
         title VARCHAR(255) NOT NULL,
         content TEXT NOT NULL,
         type VARCHAR(50) NOT NULL,
-        mediaUrl VARCHAR(255) NOT NULL,
+        mediaUrl LONGTEXT NOT NULL,
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);

@@ -29,28 +29,19 @@ export default function AdminDashboard() {
   const [token, setToken] = useState("");
   const [adminUser, setAdminUser] = useState(null);
 
-  const handleImageUpload = async (file) => {
-    if (!file) return null;
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData
-      });
-      const resData = await res.json();
-      if (resData.success) {
-        return resData.url;
-      } else {
-        alert("Upload failed: " + resData.error);
-        return null;
-      }
-    } catch (err) {
-      console.error("Upload error:", err);
-      alert("Error uploading file to local disk.");
-      return null;
-    }
+  const handleImageUpload = (file) => {
+    if (!file) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        resolve(reader.result); // Returns "data:image/jpeg;base64,..."
+      };
+      reader.onerror = () => {
+        alert("Failed to read image file.");
+        resolve(null);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const [activeTab, setActiveTab] = useState("registrations");
@@ -112,6 +103,8 @@ export default function AdminDashboard() {
     stock: "10",
     isEnabled: true
   });
+  const [customCategory, setCustomCategory] = useState("");
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [prodLoading, setProdLoading] = useState(false);
   const [prodMsg, setProdMsg] = useState("");
 
@@ -465,6 +458,14 @@ export default function AdminDashboard() {
     setProdMsg("");
     setProdLoading(true);
 
+    const finalCategory = isCustomCategory ? customCategory : prodForm.category;
+    if (!finalCategory || finalCategory.trim() === "") {
+      alert("Please select or specify a category name");
+      setProdLoading(false);
+      return;
+    }
+
+    const finalForm = { ...prodForm, category: finalCategory };
     const isUpdate = prodForm.id !== null;
     const url = "/api/products";
     const method = isUpdate ? "PUT" : "POST";
@@ -476,12 +477,14 @@ export default function AdminDashboard() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(prodForm)
+        body: JSON.stringify(finalForm)
       });
       const resData = await res.json();
       if (resData.success) {
         setProdMsg(resData.message);
         setProdForm({ id: null, name: "", category: "Cakes", basePrice: "", image: "", stock: "10", isEnabled: true });
+        setCustomCategory("");
+        setIsCustomCategory(false);
         fetchProducts();
       } else {
         setProdMsg("Error: " + resData.error);
@@ -1697,15 +1700,39 @@ export default function AdminDashboard() {
                         <div>
                           <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Product Category</label>
                           <select
-                            value={prodForm.category}
-                            onChange={(e) => setProdForm({ ...prodForm, category: e.target.value })}
+                            value={isCustomCategory ? "custom" : prodForm.category}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "custom") {
+                                setIsCustomCategory(true);
+                              } else {
+                                setIsCustomCategory(false);
+                                setProdForm({ ...prodForm, category: val });
+                              }
+                            }}
                             className="input-field bg-[#0c0706] cursor-pointer"
                           >
-                            <option value="Cakes">Cakes</option>
-                            <option value="Cupcakes">Cupcakes</option>
-                            <option value="Pastries">Pastries</option>
-                            <option value="Cookies">Cookies</option>
+                            {(() => {
+                              const defaultCats = ["Cakes", "Cupcakes", "Pastries", "Cookies"];
+                              const uniqueCats = Array.from(new Set(products.map(p => p.category)));
+                              const merged = Array.from(new Set([...defaultCats, ...uniqueCats]));
+                              return merged.map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                              ));
+                            })()}
+                            <option value="custom">+ Create New Category...</option>
                           </select>
+
+                          {isCustomCategory && (
+                            <input
+                              type="text"
+                              value={customCategory}
+                              onChange={(e) => setCustomCategory(e.target.value)}
+                              placeholder="Enter custom category..."
+                              className="input-field mt-2 text-xs font-serif"
+                              required
+                            />
+                          )}
                         </div>
                         <div>
                           <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Product / Item Name</label>
@@ -1780,7 +1807,11 @@ export default function AdminDashboard() {
                         {prodForm.id && (
                           <button
                             type="button"
-                            onClick={() => setProdForm({ id: null, name: "", category: "Cakes", basePrice: "", image: "", stock: "10", isEnabled: true })}
+                            onClick={() => {
+                              setProdForm({ id: null, name: "", category: "Cakes", basePrice: "", image: "", stock: "10", isEnabled: true });
+                              setIsCustomCategory(false);
+                              setCustomCategory("");
+                            }}
                             className="bg-red-950/20 border border-red-500/30 text-red-400 py-2 px-4 text-xs rounded cursor-pointer transition hover:bg-red-900/40"
                           >
                             Cancel Edit
