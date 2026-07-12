@@ -29,9 +29,8 @@ async function scrapeRealTransaction(paymentMethod, referenceInput, targetAmount
     targetUrl = cleanInput;
   } else {
     if (paymentMethod === "telebirr") {
-      targetUrl = `https://transactioninfo.ethiotelecom.et/receipt/${cleanInput.toUpperCase()}`;
+      targetUrl = `https://transactioninfo.ethiotelecom.et/receipt/${cleanInput}`;
     } else {
-      // Auto-prepend CBE receipt URL if only code is provided
       if (/^[a-zA-Z0-9_-]{10,40}$/.test(cleanInput)) {
         targetUrl = `https://mbreciept.cbe.com.et/${cleanInput}`;
       } else {
@@ -70,7 +69,6 @@ async function scrapeRealTransaction(paymentMethod, referenceInput, targetAmount
     const $ = cheerio.load(html);
 
     if (targetUrl.includes("ethiotelecom.et")) {
-      // --- TELEBIRR PARSING ---
       let status = "";
       let payerName = "";
       let receiverName = "";
@@ -116,7 +114,6 @@ async function scrapeRealTransaction(paymentMethod, referenceInput, targetAmount
         return { success: false, error: `Transaction status is '${status}', not completed.` };
       }
 
-      // Verify Receiver matches VC Cake Academy owner
       if (receiverName && !receiverName.toLowerCase().includes(expectedTeleHolder.toLowerCase())) {
         return {
           success: false,
@@ -126,7 +123,7 @@ async function scrapeRealTransaction(paymentMethod, referenceInput, targetAmount
 
       const diff = Math.abs(settledAmount - targetAmount);
       if (diff > 0.05) {
-        return { success: false, error: `Transaction amount discrepancy: Receipt reports ${settledAmount} ETB, but form expected ${targetAmount} ETB.` };
+        return { success: false, error: `Transaction amount discrepancy: Receipt reports ${settledAmount} ETB, but expected ${targetAmount} ETB.` };
       }
 
       return {
@@ -137,7 +134,6 @@ async function scrapeRealTransaction(paymentMethod, referenceInput, targetAmount
       };
 
     } else if (targetUrl.includes("cbe.com.et")) {
-      // Extract the path token
       const urlObj = new URL(targetUrl);
       const token = urlObj.pathname.split("/").pop();
 
@@ -145,7 +141,6 @@ async function scrapeRealTransaction(paymentMethod, referenceInput, targetAmount
         return { success: false, error: "Failed to parse Reference No. from CBE Customer Receipt page." };
       }
 
-      // Call CBE Public API directly
       const apiRes = await fetch(`https://Mb.cbe.com.et/api/v1/transactions/public/transaction-detail/${token}`, {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -179,7 +174,6 @@ async function scrapeRealTransaction(paymentMethod, referenceInput, targetAmount
         return { success: false, error: "Failed to parse Reference No. from CBE Customer Receipt page." };
       }
 
-      // Verify Receiver matches VC Cake Academy owner
       if (receiverName && !receiverName.toLowerCase().includes(expectedCbeHolder.toLowerCase())) {
         return {
           success: false,
@@ -189,7 +183,7 @@ async function scrapeRealTransaction(paymentMethod, referenceInput, targetAmount
 
       const diff = Math.abs(transferredAmount - targetAmount);
       if (diff > 0.05) {
-        return { success: false, error: `Transaction amount discrepancy: CBE receipt reports ${transferredAmount} ETB, but form expected ${targetAmount} ETB.` };
+        return { success: false, error: `Transaction amount discrepancy: CBE receipt reports ${transferredAmount} ETB, but expected ${targetAmount} ETB.` };
       }
 
       return {
@@ -212,78 +206,56 @@ async function scrapeRealTransaction(paymentMethod, referenceInput, targetAmount
 export async function POST(request) {
   try {
     const body = await request.json();
-    const {
-      customerName,
-      customerPhone,
-      cakeType,
-      sizeKg,
-      layers,
-      flavor,
-      description,
-      deliveryDate,
-      paymentReference,
-      amountPaid,
-      totalAmount,
-      paymentMethod
-    } = body;
+    const { id, type, paymentMethod, paymentReference, amountPaid } = body;
 
-    // Validate fields
-    if (
-      !customerName ||
-      !customerPhone ||
-      !cakeType ||
-      !sizeKg ||
-      !layers ||
-      !flavor ||
-      !deliveryDate ||
-      !paymentReference ||
-      !amountPaid ||
-      !totalAmount
-    ) {
-      return NextResponse.json({ success: false, error: "Please fill all required order details." }, { status: 400 });
+    if (!id || !type || !paymentReference || !amountPaid) {
+      return NextResponse.json({ success: false, error: "Missing required fields." }, { status: 400 });
     }
 
-    const payMethod = paymentMethod || "cbe";
     const targetAmount = Number(amountPaid);
-    const orderTotal = Number(totalAmount);
+    const payMethod = paymentMethod || "cbe";
+    const refCode = paymentReference.trim().toUpperCase();
 
+    // 1. Fetch settings
     const settings = await db.getHeroSettings() || {};
-
-    // Validate global system enablement
-    if (settings.ordersEnabled === 0 || settings.ordersEnabled === false) {
-      return NextResponse.json({ success: false, error: "Custom cake orders are temporarily closed." }, { status: 400 });
-    }
-
-    // Validate product stock limit
-    const products = await db.getProducts();
-    const matchingProduct = products.find(p => p.name.trim().toLowerCase() === cakeType.trim().toLowerCase());
-    if (matchingProduct) {
-      if (matchingProduct.stock <= 0) {
-        return NextResponse.json({ success: false, error: `Sorry, ${cakeType} is currently out of stock.` }, { status: 400 });
-      }
-      // Decrement product stock
-      await db.updateProduct(matchingProduct.id, { stock: matchingProduct.stock - 1 });
-    }
-
-    // Determine the minimum required payment
-    let minPayment = settings.minPaymentAmount !== undefined ? Number(settings.minPaymentAmount) : 500;
-    if (matchingProduct && matchingProduct.minPaymentAmount > 0) {
-      minPayment = Number(matchingProduct.minPaymentAmount);
-    }
-    const requiredMin = Math.min(orderTotal, minPayment);
-    if (targetAmount < requiredMin) {
-      return NextResponse.json({ 
-        success: false, 
-        error: `Payment amount (${targetAmount} ETB) is below the minimum required amount (${requiredMin} ETB) for this order.` 
-      }, { status: 400 });
-    }
-
     const expectedCbeHolder = settings.cbeAccountHolder || "Biruk Tigistu Lugaba";
     const expectedTeleHolder = settings.telebirrAccountHolder || "Kibrom Haileselassie Abreha";
 
+    // 2. Fetch existing order/registration
+    let targetRecord = null;
+    if (type === "order") {
+      targetRecord = await db.getCakeOrderById(id);
+    } else if (type === "registration") {
+      targetRecord = await db.getCourseRegistrationById(id);
+    } else {
+      return NextResponse.json({ success: false, error: "Invalid type." }, { status: 400 });
+    }
+
+    if (!targetRecord) {
+      return NextResponse.json({ success: false, error: "Record not found." }, { status: 404 });
+    }
+
+    // 3. Duplicate reference checking (split check)
+    const regs = await db.getCourseRegistrations();
+    const duplicateReg = regs.find((r) => 
+      r.paymentReference.trim().toUpperCase().split(',').map(s => s.trim()).includes(refCode)
+    );
+    if (duplicateReg) {
+      return NextResponse.json({ success: false, error: "This reference ID has already been claimed for course registration." }, { status: 400 });
+    }
+
+    const orders = await db.getCakeOrders();
+    const duplicateOrder = orders.find((o) => 
+      o.paymentReference.trim().toUpperCase().split(',').map(s => s.trim()).includes(refCode)
+    );
+    if (duplicateOrder) {
+      return NextResponse.json({ success: false, error: "This reference ID has already been claimed for a cake order." }, { status: 400 });
+    }
+
+    // 4. Run bank scraper verification
     const scraperResult = await scrapeRealTransaction(
-      payMethod, 
-      paymentReference, 
+      payMethod,
+      refCode,
       targetAmount,
       expectedCbeHolder,
       expectedTeleHolder
@@ -293,73 +265,29 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: scraperResult.error }, { status: 400 });
     }
 
-    // Check duplicate references
-    const savedRefCode = scraperResult.isPending 
-      ? paymentReference.trim().toUpperCase() 
-      : scraperResult.referenceId;
-
-    const regs = await db.getCourseRegistrations();
-    const duplicateReg = regs.find((r) => 
-      r.paymentReference.trim().toUpperCase().split(',').map(s => s.trim()).includes(savedRefCode)
-    );
-    if (duplicateReg) {
-      return NextResponse.json(
-        { success: false, error: `This Payment Reference (${savedRefCode}) is already claimed for course registration.` },
-        { status: 400 }
-      );
-    }
-
-    const orders = await db.getCakeOrders();
-    const duplicateOrder = orders.find((o) => 
-      o.paymentReference.trim().toUpperCase().split(',').map(s => s.trim()).includes(savedRefCode)
-    );
-    if (duplicateOrder) {
-      return NextResponse.json(
-        { success: false, error: `This Payment Reference (${savedRefCode}) has already been submitted for a cake order.` },
-        { status: 400 }
-      );
-    }
-
-    // Determine status based on system availability
+    const savedRefCode = scraperResult.isPending ? refCode : scraperResult.referenceId;
     const status = scraperResult.isPending ? "pending" : "approved";
     const verifiedAt = scraperResult.isPending ? null : new Date().toISOString();
 
-    // Save order
-    const newOrder = await db.createCakeOrder({
-      customerName,
-      customerPhone,
-      cakeType,
-      sizeKg: parseFloat(sizeKg),
-      layers: parseInt(layers),
-      flavor,
-      description: description || "",
-      deliveryDate,
-      paymentReference: savedRefCode,
-      amountPaid: targetAmount,
-      totalAmount: orderTotal,
-      status,
-      paymentMethod: payMethod,
-      verifiedAt
-    });
-
-    if (scraperResult.isPending) {
-      return NextResponse.json({
-        success: true,
-        message: "The bank portal is currently offline (502 Bad Gateway). We have submitted your receipt details as PENDING for manual administrative verification.",
-        order: newOrder,
-        isPending: true
-      });
+    // 5. Update database
+    let updatedRecord = null;
+    if (type === "order") {
+      updatedRecord = await db.addPaymentToCakeOrder(id, targetAmount, savedRefCode, status, verifiedAt);
+    } else {
+      updatedRecord = await db.addPaymentToCourseRegistration(id, targetAmount, savedRefCode, status, verifiedAt);
     }
 
     return NextResponse.json({
       success: true,
-      message: "Cake order placed and payment verified successfully!",
-      order: newOrder,
-      isPending: false
+      message: scraperResult.isPending
+        ? "Bank portal offline. Payment submitted as PENDING for manual administrative review."
+        : "Remaining payment processed and verified successfully!",
+      data: updatedRecord,
+      isPending: scraperResult.isPending
     });
 
   } catch (error) {
-    console.error("Cake order API error:", error);
+    console.error("Pay remaining error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

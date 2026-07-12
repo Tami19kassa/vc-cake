@@ -4,7 +4,26 @@ import { db } from "@/lib/db";
 
 async function scrapeRealTransaction(paymentMethod, referenceInput, targetAmount, expectedCbeHolder, expectedTeleHolder) {
   let targetUrl = "";
-  const cleanInput = referenceInput.trim();
+  const cleanInput = referenceInput.trim().toUpperCase();
+
+  // Local Mock Check
+  const mockTx = await db.getCBEMockTransaction(cleanInput);
+  if (mockTx) {
+    if (mockTx.isClaimed) {
+      return { success: false, error: "Transaction reference has already been claimed." };
+    }
+    const diff = Math.abs(mockTx.amount - targetAmount);
+    if (diff > 0.05) {
+      return { success: false, error: `Transaction amount discrepancy: Mock receipt reports ${mockTx.amount} ETB, but form expected ${targetAmount} ETB.` };
+    }
+    await db.claimCBEMockTransaction(cleanInput);
+    return {
+      success: true,
+      isPending: false,
+      referenceId: mockTx.referenceId,
+      payerName: mockTx.senderName
+    };
+  }
 
   if (cleanInput.startsWith("http://") || cleanInput.startsWith("https://")) {
     targetUrl = cleanInput;
@@ -190,10 +209,10 @@ async function scrapeRealTransaction(paymentMethod, referenceInput, targetAmount
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { studentName, studentPhone, studentEmail, shift, paymentReference, amountPaid, paymentMethod } = body;
+    const { studentName, studentPhone, studentEmail, shift, paymentReference, amountPaid, totalAmount, paymentMethod } = body;
 
     // Validate fields
-    if (!studentName || !studentPhone || !studentEmail || !shift || !paymentReference || !amountPaid) {
+    if (!studentName || !studentPhone || !studentEmail || !shift || !paymentReference || !amountPaid || !totalAmount) {
       return NextResponse.json(
         { success: false, error: "Please fill all required registration details." },
         { status: 400 }
@@ -202,6 +221,7 @@ export async function POST(request) {
 
     const payMethod = paymentMethod || "cbe";
     const targetAmount = Number(amountPaid);
+    const orderTotal = Number(totalAmount);
 
     // Verify shift option
     const validShifts = ["morning", "afternoon", "night"];
@@ -211,6 +231,16 @@ export async function POST(request) {
     }
 
     const settings = await db.getHeroSettings() || {};
+
+    // Validate minimum payment limit
+    const minPayment = settings.minPaymentAmount !== undefined ? Number(settings.minPaymentAmount) : 500;
+    const requiredMin = Math.min(orderTotal, minPayment);
+    if (targetAmount < requiredMin) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `Payment amount (${targetAmount} ETB) is below the minimum required amount (${requiredMin} ETB) for registration.` 
+      }, { status: 400 });
+    }
 
     // Validate global system enablement
     if (settings.coursesEnabled === 0 || settings.coursesEnabled === false) {
@@ -261,8 +291,8 @@ export async function POST(request) {
       : scraperResult.referenceId;
 
     const regs = await db.getCourseRegistrations();
-    const duplicateReg = regs.find(
-      (r) => r.paymentReference.trim().toUpperCase() === savedRefCode
+    const duplicateReg = regs.find((r) => 
+      r.paymentReference.trim().toUpperCase().split(',').map(s => s.trim()).includes(savedRefCode)
     );
 
     if (duplicateReg) {
@@ -274,8 +304,8 @@ export async function POST(request) {
 
     // Check cake orders to prevent reference reuse
     const orders = await db.getCakeOrders();
-    const duplicateOrder = orders.find(
-      (o) => o.paymentReference.trim().toUpperCase() === savedRefCode
+    const duplicateOrder = orders.find((o) => 
+      o.paymentReference.trim().toUpperCase().split(',').map(s => s.trim()).includes(savedRefCode)
     );
 
     if (duplicateOrder) {
@@ -297,6 +327,7 @@ export async function POST(request) {
       shift: shift.toLowerCase(),
       paymentReference: savedRefCode,
       amountPaid: targetAmount,
+      totalAmount: orderTotal,
       status,
       paymentMethod: payMethod,
       verifiedAt

@@ -32,7 +32,7 @@ export async function POST(request) {
       title, subtitle, ctaText, imageUrl, 
       cbeAccountNo, cbeAccountHolder, telebirrPhone, telebirrAccountHolder,
       contactPhone1, contactPhone2, contactEmail, contactAddressEn, contactAddressAm,
-      coursePrice, layerPrice, coursesEnabled, ordersEnabled,
+      coursePrice, layerPrice, minPaymentAmount, coursesEnabled, ordersEnabled,
       morningShiftEnabled, afternoonShiftEnabled, nightShiftEnabled,
       morningShiftCapacity, afternoonShiftCapacity, nightShiftCapacity
     } = body;
@@ -57,6 +57,7 @@ export async function POST(request) {
       contactAddressAm,
       coursePrice,
       layerPrice,
+      minPaymentAmount,
       coursesEnabled,
       ordersEnabled,
       morningShiftEnabled,

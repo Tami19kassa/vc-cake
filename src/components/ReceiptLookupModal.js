@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Search, CheckCircle, FileText, Printer, AlertCircle } from "lucide-react";
 
 export default function ReceiptLookupModal({ isOpen, onClose }) {
@@ -8,9 +8,21 @@ export default function ReceiptLookupModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [results, setResults] = useState(null);
+  const [settings, setSettings] = useState(null);
   
   // Selected receipt to view details
   const [selectedReceipt, setSelectedReceipt] = useState(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetch("/api/settings")
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setSettings(data.settings);
+        })
+        .catch(e => console.error("Error loading settings in lookup modal:", e));
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -49,7 +61,7 @@ export default function ReceiptLookupModal({ isOpen, onClose }) {
   const handlePrintReceipt = (receipt, type) => {
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
       window.location.origin + `/admin/verify?type=${type}&id=${receipt.id}&ref=${receipt.paymentReference}`
-    )}&color=4a2c11&bgcolor=fdfbf7`;
+    )}`;
 
     const printWindow = window.open("", "_blank");
     
@@ -59,14 +71,17 @@ export default function ReceiptLookupModal({ isOpen, onClose }) {
       { label: "Payment Method", value: (receipt.paymentMethod || "cbe").toUpperCase() },
       { label: "Transaction ID / Ref", value: receipt.paymentReference },
       ...(type === "registration" ? [
-        { label: "Course Shift", value: receipt.shift.toUpperCase() },
-        { label: "Amount Paid", value: `${Number(receipt.amountPaid).toLocaleString()} ETB` }
+        { label: "Course Shift", value: receipt.shift.toUpperCase() }
       ] : [
         { label: "Cake Type", value: receipt.cakeType },
         { label: "Flavor / Design", value: `${receipt.flavor} (${receipt.sizeKg} Kg, ${receipt.layers} L)` },
-        { label: "Delivery Date", value: receipt.deliveryDate },
-        { label: "Amount Paid", value: `${Number(receipt.amountPaid).toLocaleString()} ETB` }
-      ])
+        { label: "Delivery Date", value: receipt.deliveryDate }
+      ]),
+      { label: "Total Price", value: `${Number(receipt.totalAmount || receipt.amountPaid).toLocaleString()} ETB` },
+      { label: "Amount Paid", value: `${Number(receipt.amountPaid).toLocaleString()} ETB` },
+      ...(Number(receipt.totalAmount || 0) > Number(receipt.amountPaid) ? [
+        { label: "Remaining Balance", value: `${(Number(receipt.totalAmount) - Number(receipt.amountPaid)).toLocaleString()} ETB` }
+      ] : [])
     ].map(row => `
       <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e7e3dd; font-size: 13px;">
         <span style="color: #8c7e7a; font-weight: 500;">${row.label}:</span>
@@ -85,7 +100,7 @@ export default function ReceiptLookupModal({ isOpen, onClose }) {
             .sub { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #8c7e7a; font-weight: bold; }
             .title { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: #c5a059; margin: 15px 0; font-weight: bold; background: rgba(74,44,17,0.03); padding: 8px; border-radius: 6px; }
             .qr-code { margin: 25px 0; display: flex; justify-content: center; }
-            .qr-code img { border: 4px solid #4a2c11; border-radius: 8px; }
+            .qr-code img { border: 4px solid #4a2c11; border-radius: 8px; padding: 12px; background: white; }
             .footer { font-size: 11px; color: #8c7e7a; margin-top: 25px; border-top: 1px solid #f0ece6; padding-top: 15px; font-style: italic; line-height: 1.5; }
           </style>
         </head>
@@ -193,23 +208,59 @@ export default function ReceiptLookupModal({ isOpen, onClose }) {
                   </>
                 )}
                 <div className="flex justify-between">
+                  <span className="text-[#8c7e7a]">Total Cost:</span>
+                  <span className="text-white font-bold">
+                    {Number(selectedReceipt.data.totalAmount || selectedReceipt.data.amountPaid).toLocaleString()} ETB
+                  </span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-[#8c7e7a]">Amount Paid:</span>
                   <span className="text-green-400 font-bold">{Number(selectedReceipt.data.amountPaid).toLocaleString()} ETB</span>
                 </div>
+                {Number(selectedReceipt.data.totalAmount || 0) > Number(selectedReceipt.data.amountPaid) && (
+                  <div className="flex justify-between">
+                    <span className="text-[#8c7e7a]">Remaining:</span>
+                    <span className="text-amber-400 font-bold">
+                      {(Number(selectedReceipt.data.totalAmount) - Number(selectedReceipt.data.amountPaid)).toLocaleString()} ETB
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-center pt-2">
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
                     window.location.origin + `/admin/verify?type=${selectedReceipt.type}&id=${selectedReceipt.data.id}&ref=${selectedReceipt.data.paymentReference}`
-                  )}&color=4a2c11&bgcolor=fdfbf7`}
+                  )}`}
                   width="120"
                   height="120"
                   alt="QR Verification Code"
-                  className="border-2 border-[#d4af37]/30 rounded-lg p-1 bg-white"
+                  className="border-2 border-[#d4af37]/30 rounded-lg p-3 bg-white"
                 />
               </div>
             </div>
+
+            {/* Pay Remaining Balance Form */}
+            {Number(selectedReceipt.data.totalAmount || 0) > Number(selectedReceipt.data.amountPaid) && (
+              <PayRemainingForm 
+                receipt={selectedReceipt} 
+                settings={settings}
+                onSuccess={(updatedRecord) => {
+                  setSelectedReceipt({
+                    ...selectedReceipt,
+                    data: updatedRecord
+                  });
+                  if (results) {
+                    const listKey = selectedReceipt.type === "registration" ? "registrations" : "orders";
+                    const newList = results[listKey].map(item => item.id === updatedRecord.id ? updatedRecord : item);
+                    setResults({
+                      ...results,
+                      [listKey]: newList
+                    });
+                  }
+                }}
+              />
+            )}
 
             <div className="flex flex-col gap-2 max-w-xs mx-auto">
               <button
@@ -300,6 +351,147 @@ export default function ReceiptLookupModal({ isOpen, onClose }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function PayRemainingForm({ receipt, settings, onSuccess }) {
+  const [refCode, setRefCode] = useState("");
+  const [payAmount, setPayAmount] = useState("");
+  const [payMethod, setPayMethod] = useState("cbe");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const remaining = Number(receipt.data.totalAmount) - Number(receipt.data.amountPaid);
+
+  useEffect(() => {
+    setPayAmount(String(remaining));
+  }, [remaining]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccessMsg("");
+
+    if (!refCode || !payAmount) {
+      setError("Please fill all fields.");
+      return;
+    }
+
+    if (Number(payAmount) <= 0) {
+      setError("Amount must be greater than 0.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/pay-remaining", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: receipt.data.id,
+          type: receipt.type,
+          paymentMethod: payMethod,
+          paymentReference: refCode,
+          amountPaid: Number(payAmount)
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMsg(data.message || "Payment processed successfully!");
+        setRefCode("");
+        setTimeout(() => {
+          onSuccess(data.data);
+        }, 1500);
+      } else {
+        setError(data.error || "Payment verification failed.");
+      }
+    } catch (err) {
+      setError("Server connection failed. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cbeAcc = settings?.cbeAccountNo || "1000444555666";
+  const cbeHolder = settings?.cbeAccountHolder || "Biruk Tigistu Lugaba";
+  const telePhone = settings?.telebirrPhone || "251911378448";
+  const teleHolder = settings?.telebirrAccountHolder || "Kibrom Haileselassie Abreha";
+
+  return (
+    <div className="bg-[#0f0807] border border-[#d4af37]/20 p-4 rounded-xl max-w-sm mx-auto my-3 text-left text-xs space-y-3 font-sans">
+      <h4 className="font-serif font-bold text-[#d4af37] text-sm uppercase tracking-wide">Pay Remaining Balance</h4>
+      <p className="text-[10px] text-[#c9bfbc]">
+        To pay the outstanding balance of <strong>{remaining.toLocaleString()} ETB</strong>, transfer through one of the accounts below and enter your new transaction code:
+      </p>
+
+      <div className="bg-black/40 p-2.5 rounded border border-[#d4af37]/10 space-y-1.5 text-[10px]">
+        {payMethod === "cbe" ? (
+          <div>
+            <span className="block font-semibold text-[#d4af37]">CBE Bank Account:</span>
+            <span className="block text-white font-mono">{cbeAcc}</span>
+            <span className="block text-[#8c7e7a]">Holder: {cbeHolder}</span>
+          </div>
+        ) : (
+          <div>
+            <span className="block font-semibold text-[#e8a7a1]">Telebirr Merchant:</span>
+            <span className="block text-white font-mono">+{telePhone}</span>
+            <span className="block text-[#8c7e7a]">Name: {teleHolder}</span>
+          </div>
+        )}
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-2">
+        <div className="flex gap-2">
+          <div className="w-1/2">
+            <label className="block text-[9px] text-[#8c7e7a] mb-0.5">Method</label>
+            <select
+              value={payMethod}
+              onChange={(e) => setPayMethod(e.target.value)}
+              className="w-full bg-black border border-white/10 rounded px-2 py-1 text-white text-[10px]"
+            >
+              <option value="cbe">CBE Transfer</option>
+              <option value="telebirr">Telebirr</option>
+            </select>
+          </div>
+          <div className="w-1/2">
+            <label className="block text-[9px] text-[#8c7e7a] mb-0.5">Amount Paid (ETB)</label>
+            <input
+              type="number"
+              value={payAmount}
+              onChange={(e) => setPayAmount(e.target.value)}
+              className="w-full bg-black border border-white/10 rounded px-2 py-1 text-white text-[10px] font-mono text-[#d4af37]"
+              required
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-[9px] text-[#8c7e7a] mb-0.5">
+            {payMethod === "cbe" ? "CBE Reference Code" : "Telebirr Transaction ID"}
+          </label>
+          <input
+            type="text"
+            value={refCode}
+            onChange={(e) => setRefCode(e.target.value)}
+            placeholder={payMethod === "cbe" ? "e.g. FT2608123456" : "e.g. TX2608111222"}
+            className="w-full bg-black border border-white/10 rounded px-2 py-1 text-white text-[10px] font-mono uppercase font-bold text-[#d4af37]"
+            required
+          />
+        </div>
+
+        {error && <div className="text-red-400 text-[10px] bg-red-500/10 p-1.5 rounded">{error}</div>}
+        {successMsg && <div className="text-green-400 text-[10px] bg-green-500/10 p-1.5 rounded">{successMsg}</div>}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-[#d4af37]/20 border border-[#d4af37]/45 text-[#d4af37] hover:bg-[#d4af37]/35 py-1.5 rounded font-semibold text-[10px] transition cursor-pointer"
+        >
+          {loading ? "Verifying..." : "Verify & Submit Payment"}
+        </button>
+      </form>
     </div>
   );
 }

@@ -169,6 +169,7 @@ const seedInitialData = async (store) => {
         contactAddressAm: 'ቦሌ፣ አዲስ አበባ',
         coursePrice: 2500,
         layerPrice: 300,
+        minPaymentAmount: 500,
         coursesEnabled: true,
         ordersEnabled: true,
         morningShiftEnabled: true,
@@ -182,11 +183,11 @@ const seedInitialData = async (store) => {
   // Seed products
   if (!store.products || store.products.length === 0) {
     store.products = [
-      { id: 1, name: "Wedding Cake", category: "Cakes", basePrice: 800, image: "", isEnabled: true, createdAt: new Date().toISOString() },
-      { id: 2, name: "Birthday Cake", category: "Cakes", basePrice: 800, image: "", isEnabled: true, createdAt: new Date().toISOString() },
-      { id: 3, name: "Celebration Cake", category: "Cakes", basePrice: 800, image: "", isEnabled: true, createdAt: new Date().toISOString() },
-      { id: 4, name: "Baby Shower Cake", category: "Cakes", basePrice: 800, image: "", isEnabled: true, createdAt: new Date().toISOString() },
-      { id: 5, name: "Custom Cupcakes", category: "Cupcakes", basePrice: 600, image: "", isEnabled: true, createdAt: new Date().toISOString() }
+      { id: 1, name: "Wedding Cake", category: "Cakes", basePrice: 800, minPaymentAmount: 500, image: "", isEnabled: true, createdAt: new Date().toISOString() },
+      { id: 2, name: "Birthday Cake", category: "Cakes", basePrice: 800, minPaymentAmount: 300, image: "", isEnabled: true, createdAt: new Date().toISOString() },
+      { id: 3, name: "Celebration Cake", category: "Cakes", basePrice: 800, minPaymentAmount: 300, image: "", isEnabled: true, createdAt: new Date().toISOString() },
+      { id: 4, name: "Baby Shower Cake", category: "Cakes", basePrice: 800, minPaymentAmount: 300, image: "", isEnabled: true, createdAt: new Date().toISOString() },
+      { id: 5, name: "Custom Cupcakes", category: "Cupcakes", basePrice: 600, minPaymentAmount: 150, image: "", isEnabled: true, createdAt: new Date().toISOString() }
     ];
   }
 
@@ -390,6 +391,7 @@ export const initDB = async () => {
         cbeAccountHolder VARCHAR(255) DEFAULT 'Biruk Tigistu Lugaba',
         telebirrPhone VARCHAR(255) DEFAULT '251911378448',
         telebirrAccountHolder VARCHAR(255) DEFAULT 'Kibrom Haileselassie Abreha',
+        minPaymentAmount DOUBLE DEFAULT 500,
         updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
@@ -465,6 +467,18 @@ export const initDB = async () => {
     try {
       await connection.query(`ALTER TABLE products ADD COLUMN stock INT DEFAULT 10`);
     } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE hero_settings ADD COLUMN minPaymentAmount DOUBLE DEFAULT 500`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE course_registrations ADD COLUMN totalAmount DOUBLE DEFAULT 0`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE cake_orders ADD COLUMN totalAmount DOUBLE DEFAULT 0`);
+    } catch (e) {}
+    try {
+      await connection.query(`ALTER TABLE products ADD COLUMN minPaymentAmount DOUBLE DEFAULT 0`);
+    } catch (e) {}
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS products (
@@ -472,6 +486,7 @@ export const initDB = async () => {
         name VARCHAR(255) NOT NULL,
         category VARCHAR(255) NOT NULL,
         basePrice DOUBLE NOT NULL,
+        minPaymentAmount DOUBLE DEFAULT 0,
         image LONGTEXT,
         stock INT DEFAULT 10,
         isEnabled BOOLEAN DEFAULT TRUE,
@@ -488,6 +503,7 @@ export const initDB = async () => {
         shift VARCHAR(50) NOT NULL,
         paymentReference VARCHAR(255) UNIQUE NOT NULL,
         amountPaid DOUBLE NOT NULL,
+        totalAmount DOUBLE DEFAULT 0,
         status VARCHAR(50) DEFAULT 'pending',
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
       )
@@ -506,6 +522,7 @@ export const initDB = async () => {
         deliveryDate VARCHAR(50) NOT NULL,
         paymentReference VARCHAR(255) UNIQUE NOT NULL,
         amountPaid DOUBLE NOT NULL,
+        totalAmount DOUBLE DEFAULT 0,
         status VARCHAR(50) DEFAULT 'pending',
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
       )
@@ -569,10 +586,10 @@ export const initDB = async () => {
         `INSERT INTO hero_settings (
           id, title, subtitle, ctaText, imageUrl, 
           contactPhone1, contactPhone2, contactEmail, contactAddressEn, contactAddressAm, 
-          coursePrice, layerPrice, coursesEnabled, ordersEnabled, 
+          coursePrice, layerPrice, minPaymentAmount, coursesEnabled, ordersEnabled, 
           morningShiftEnabled, afternoonShiftEnabled, nightShiftEnabled,
           morningShiftCapacity, afternoonShiftCapacity, nightShiftCapacity
-        ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 30, 30, 30)`,
+        ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 500, ?, ?, ?, ?, ?, 30, 30, 30)`,
         [
           SEED_HERO.title, SEED_HERO.subtitle, SEED_HERO.ctaText,
           'https://images.unsplash.com/photo-1581299894007-aaa50297cf16?q=80&w=800&auto=format&fit=crop',
@@ -586,14 +603,14 @@ export const initDB = async () => {
     const [prodCheck] = await connection.query('SELECT * FROM products LIMIT 1');
     if (prodCheck.length === 0) {
       const defaultProds = [
-        ["Wedding Cake", "Cakes", 800, "", 10],
-        ["Birthday Cake", "Cakes", 800, "", 15],
-        ["Celebration Cake", "Cakes", 800, "", 20],
-        ["Baby Shower Cake", "Cakes", 800, "", 10],
-        ["Custom Cupcakes", "Cupcakes", 600, "", 30]
+        ["Wedding Cake", "Cakes", 800, 500, "", 10],
+        ["Birthday Cake", "Cakes", 800, 300, "", 15],
+        ["Celebration Cake", "Cakes", 800, 300, "", 20],
+        ["Baby Shower Cake", "Cakes", 800, 300, "", 10],
+        ["Custom Cupcakes", "Cupcakes", 600, 150, "", 30]
       ];
       for (const p of defaultProds) {
-        await connection.query('INSERT INTO products (name, category, basePrice, image, stock, isEnabled) VALUES (?, ?, ?, ?, ?, 1)', p);
+        await connection.query('INSERT INTO products (name, category, basePrice, minPaymentAmount, image, stock, isEnabled) VALUES (?, ?, ?, ?, ?, ?, 1)', p);
       }
       console.log('Seeded MySQL Products');
     }
@@ -656,7 +673,7 @@ export const db = {
     title, subtitle, ctaText, imageUrl, 
     cbeAccountNo, cbeAccountHolder, telebirrPhone, telebirrAccountHolder,
     contactPhone1, contactPhone2, contactEmail, contactAddressEn, contactAddressAm,
-    coursePrice, layerPrice, coursesEnabled, ordersEnabled,
+    coursePrice, layerPrice, minPaymentAmount, coursesEnabled, ordersEnabled,
     morningShiftEnabled, afternoonShiftEnabled, nightShiftEnabled,
     morningShiftCapacity, afternoonShiftCapacity, nightShiftCapacity
   ) {
@@ -682,6 +699,7 @@ export const db = {
       contactAddressAm: contactAddressAm || 'ቦሌ፣ አዲስ አበባ',
       coursePrice: coursePrice !== undefined ? Number(coursePrice) : 2500,
       layerPrice: layerPrice !== undefined ? Number(layerPrice) : 300,
+      minPaymentAmount: minPaymentAmount !== undefined ? Number(minPaymentAmount) : 500,
       coursesEnabled: coursesEnabled !== undefined ? Boolean(coursesEnabled) : true,
       ordersEnabled: ordersEnabled !== undefined ? Boolean(ordersEnabled) : true,
       morningShiftEnabled: morningShiftEnabled !== undefined ? Boolean(morningShiftEnabled) : true,
@@ -704,9 +722,9 @@ export const db = {
       `INSERT INTO hero_settings (
         id, title, subtitle, ctaText, imageUrl, cbeAccountNo, cbeAccountHolder, telebirrPhone, telebirrAccountHolder,
         contactPhone1, contactPhone2, contactEmail, contactAddressEn, contactAddressAm,
-        coursePrice, layerPrice, coursesEnabled, ordersEnabled, morningShiftEnabled, afternoonShiftEnabled, nightShiftEnabled,
+        coursePrice, layerPrice, minPaymentAmount, coursesEnabled, ordersEnabled, morningShiftEnabled, afternoonShiftEnabled, nightShiftEnabled,
         morningShiftCapacity, afternoonShiftCapacity, nightShiftCapacity
-      ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+      ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
       ON DUPLICATE KEY UPDATE 
         title = VALUES(title), 
         subtitle = VALUES(subtitle), 
@@ -723,6 +741,7 @@ export const db = {
         contactAddressAm = VALUES(contactAddressAm),
         coursePrice = VALUES(coursePrice),
         layerPrice = VALUES(layerPrice),
+        minPaymentAmount = VALUES(minPaymentAmount),
         coursesEnabled = VALUES(coursesEnabled),
         ordersEnabled = VALUES(ordersEnabled),
         morningShiftEnabled = VALUES(morningShiftEnabled),
@@ -734,7 +753,7 @@ export const db = {
       [
         title, subtitle, ctaText, imageUrl, cbeAcc, cbeHolder, telePhone, teleHolder,
         fields.contactPhone1, fields.contactPhone2, fields.contactEmail, fields.contactAddressEn, fields.contactAddressAm,
-        fields.coursePrice, fields.layerPrice, fields.coursesEnabled, fields.ordersEnabled,
+        fields.coursePrice, fields.layerPrice, fields.minPaymentAmount, fields.coursesEnabled, fields.ordersEnabled,
         fields.morningShiftEnabled, fields.afternoonShiftEnabled, fields.nightShiftEnabled,
         fields.morningShiftCapacity, fields.afternoonShiftCapacity, fields.nightShiftCapacity
       ]
@@ -764,6 +783,7 @@ export const db = {
       shift: data.shift,
       paymentReference: data.paymentReference,
       amountPaid: Number(data.amountPaid),
+      totalAmount: Number(data.totalAmount || data.amountPaid || 0),
       status: data.status || 'pending',
       paymentMethod: data.paymentMethod || 'cbe',
       verifiedAt: data.verifiedAt || null
@@ -774,7 +794,7 @@ export const db = {
     }
     const myPool = getPool();
     const [result] = await myPool.query(
-      'INSERT INTO course_registrations (studentName, studentPhone, studentEmail, shift, paymentReference, amountPaid, status, paymentMethod, verifiedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO course_registrations (studentName, studentPhone, studentEmail, shift, paymentReference, amountPaid, totalAmount, status, paymentMethod, verifiedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         regData.studentName,
         regData.studentPhone,
@@ -782,6 +802,7 @@ export const db = {
         regData.shift,
         regData.paymentReference,
         regData.amountPaid,
+        regData.totalAmount,
         regData.status,
         regData.paymentMethod,
         regData.verifiedAt
@@ -825,6 +846,7 @@ export const db = {
       deliveryDate: data.deliveryDate,
       paymentReference: data.paymentReference,
       amountPaid: Number(data.amountPaid),
+      totalAmount: Number(data.totalAmount || data.amountPaid || 0),
       status: data.status || 'pending',
       paymentMethod: data.paymentMethod || 'cbe',
       verifiedAt: data.verifiedAt || null
@@ -835,7 +857,7 @@ export const db = {
     }
     const myPool = getPool();
     const [result] = await myPool.query(
-      'INSERT INTO cake_orders (customerName, customerPhone, cakeType, sizeKg, layers, flavor, description, deliveryDate, paymentReference, amountPaid, status, paymentMethod, verifiedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO cake_orders (customerName, customerPhone, cakeType, sizeKg, layers, flavor, description, deliveryDate, paymentReference, amountPaid, totalAmount, status, paymentMethod, verifiedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         orderData.customerName,
         orderData.customerPhone,
@@ -847,6 +869,7 @@ export const db = {
         orderData.deliveryDate,
         orderData.paymentReference,
         orderData.amountPaid,
+        orderData.totalAmount,
         orderData.status,
         orderData.paymentMethod,
         orderData.verifiedAt
@@ -1140,6 +1163,7 @@ export const db = {
       name: data.name,
       category: data.category,
       basePrice: Number(data.basePrice),
+      minPaymentAmount: data.minPaymentAmount !== undefined ? Number(data.minPaymentAmount) : 0,
       image: data.image || '',
       stock: data.stock !== undefined ? Number(data.stock) : 10,
       isEnabled: data.isEnabled !== undefined ? Boolean(data.isEnabled) : true
@@ -1150,8 +1174,8 @@ export const db = {
     }
     const myPool = getPool();
     const [result] = await myPool.query(
-      'INSERT INTO products (name, category, basePrice, image, stock, isEnabled) VALUES (?, ?, ?, ?, ?, ?)',
-      [prodData.name, prodData.category, prodData.basePrice, prodData.image, prodData.stock, prodData.isEnabled ? 1 : 0]
+      'INSERT INTO products (name, category, basePrice, minPaymentAmount, image, stock, isEnabled) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [prodData.name, prodData.category, prodData.basePrice, prodData.minPaymentAmount, prodData.image, prodData.stock, prodData.isEnabled ? 1 : 0]
     );
     return { id: result.insertId, ...prodData };
   },
@@ -1162,6 +1186,7 @@ export const db = {
     if (data.name !== undefined) fields.name = data.name;
     if (data.category !== undefined) fields.category = data.category;
     if (data.basePrice !== undefined) fields.basePrice = Number(data.basePrice);
+    if (data.minPaymentAmount !== undefined) fields.minPaymentAmount = Number(data.minPaymentAmount);
     if (data.image !== undefined) fields.image = data.image;
     if (data.stock !== undefined) fields.stock = Number(data.stock);
     if (data.isEnabled !== undefined) fields.isEnabled = Boolean(data.isEnabled);
@@ -1189,6 +1214,60 @@ export const db = {
     const myPool = getPool();
     await myPool.query('DELETE FROM products WHERE id = ?', [id]);
     return true;
+  },
+
+  async addPaymentToCakeOrder(id, amount, newReference, status, verifiedAt) {
+    const config = getDBConfig();
+    const order = await this.getCakeOrderById(id);
+    if (!order) throw new Error("Order not found");
+
+    const updatedAmount = Number(order.amountPaid) + Number(amount);
+    const updatedRef = order.paymentReference + ", " + newReference.toUpperCase();
+
+    if (config.type === 'json') {
+      return await jsonQuery('cake_orders', 'update', { 
+        id, 
+        fields: { 
+          amountPaid: updatedAmount, 
+          paymentReference: updatedRef,
+          status,
+          verifiedAt
+        } 
+      });
+    }
+    const myPool = getPool();
+    await myPool.query(
+      'UPDATE cake_orders SET amountPaid = ?, paymentReference = ?, status = ?, verifiedAt = ? WHERE id = ?', 
+      [updatedAmount, updatedRef, status, verifiedAt, id]
+    );
+    return { id, amountPaid: updatedAmount, paymentReference: updatedRef, status, verifiedAt };
+  },
+
+  async addPaymentToCourseRegistration(id, amount, newReference, status, verifiedAt) {
+    const config = getDBConfig();
+    const reg = await this.getCourseRegistrationById(id);
+    if (!reg) throw new Error("Registration not found");
+
+    const updatedAmount = Number(reg.amountPaid) + Number(amount);
+    const updatedRef = reg.paymentReference + ", " + newReference.toUpperCase();
+
+    if (config.type === 'json') {
+      return await jsonQuery('course_registrations', 'update', { 
+        id, 
+        fields: { 
+          amountPaid: updatedAmount, 
+          paymentReference: updatedRef,
+          status,
+          verifiedAt
+        } 
+      });
+    }
+    const myPool = getPool();
+    await myPool.query(
+      'UPDATE course_registrations SET amountPaid = ?, paymentReference = ?, status = ?, verifiedAt = ? WHERE id = ?', 
+      [updatedAmount, updatedRef, status, verifiedAt, id]
+    );
+    return { id, amountPaid: updatedAmount, paymentReference: updatedRef, status, verifiedAt };
   }
 };
 

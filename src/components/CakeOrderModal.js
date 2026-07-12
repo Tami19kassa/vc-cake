@@ -5,8 +5,9 @@ import { X, CheckCircle, AlertCircle, Landmark, Cake } from "lucide-react";
 import { translations } from "@/lib/translations";
 import { ShinyButton } from "@/components/ShinyButton";
 
-export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settings }) {
+export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settings, initialProduct }) {
   const [lang, setLang] = useState("en");
+  const [totalPrice, setTotalPrice] = useState(0);
   const [form, setForm] = useState({
     customerName: "",
     customerPhone: "",
@@ -57,6 +58,13 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
     }
   }, [isOpen]);
 
+  // Sync initialProduct if provided
+  useEffect(() => {
+    if (isOpen && initialProduct) {
+      setForm(f => ({ ...f, cakeType: initialProduct }));
+    }
+  }, [isOpen, initialProduct]);
+
   // Calculate cost dynamically
   useEffect(() => {
     const selectedProduct = products.find(p => p.name === form.cakeType);
@@ -71,6 +79,7 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
       ? (size * basePrice + (layers - 1) * layerPrice)
       : (size * basePrice);
       
+    setTotalPrice(price);
     setForm((f) => ({ ...f, amountPaid: price.toString() }));
   }, [form.sizeKg, form.layers, form.cakeType, products, settings]);
 
@@ -93,7 +102,7 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
     if (!success) return;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
       window.location.origin + `/admin/verify?type=order&id=${success.id}&ref=${success.paymentReference}`
-    )}&color=4a2c11&bgcolor=fdfbf7`;
+    )}`;
 
     const printWindow = window.open("", "_blank");
     
@@ -105,7 +114,11 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
       { label: "Cake Type", value: success.cakeType },
       { label: "Flavor / Design", value: `${success.flavor} (${success.sizeKg} Kg, ${success.layers} L)` },
       { label: "Delivery Date", value: success.deliveryDate },
-      { label: "Amount Paid", value: `${Number(success.amountPaid).toLocaleString()} ETB` }
+      { label: "Total Price", value: `${Number(success.totalAmount || success.amountPaid).toLocaleString()} ETB` },
+      { label: "Amount Paid", value: `${Number(success.amountPaid).toLocaleString()} ETB` },
+      ...(Number(success.totalAmount || 0) > Number(success.amountPaid) ? [
+        { label: "Remaining Balance", value: `${(Number(success.totalAmount) - Number(success.amountPaid)).toLocaleString()} ETB` }
+      ] : [])
     ].map(row => `
       <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e7e3dd; font-size: 13px;">
         <span style="color: #8c7e7a; font-weight: 500;">${row.label}:</span>
@@ -124,7 +137,7 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
             .sub { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #8c7e7a; font-weight: bold; }
             .title { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: #c5a059; margin: 15px 0; font-weight: bold; background: rgba(74,44,17,0.03); padding: 8px; border-radius: 6px; }
             .qr-code { margin: 25px 0; display: flex; justify-content: center; }
-            .qr-code img { border: 4px solid #4a2c11; border-radius: 8px; }
+            .qr-code img { border: 4px solid #4a2c11; border-radius: 8px; padding: 12px; background: white; }
             .footer { font-size: 11px; color: #8c7e7a; margin-top: 25px; border-top: 1px solid #f0ece6; padding-top: 15px; font-style: italic; line-height: 1.5; }
           </style>
         </head>
@@ -182,12 +195,32 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
       return;
     }
 
+    // Validate minimum payment limit
+    const minPayment = settings?.minPaymentAmount !== undefined ? Number(settings.minPaymentAmount) : 500;
+    const selectedProduct = products.find(p => p.name === form.cakeType);
+    let prodMin = minPayment;
+    if (selectedProduct && selectedProduct.minPaymentAmount > 0) {
+      prodMin = Number(selectedProduct.minPaymentAmount);
+    }
+    const requiredMin = Math.min(totalPrice, prodMin);
+
+    if (Number(form.amountPaid) < requiredMin) {
+      setError(lang === "en" 
+        ? `Minimum required payment for this order is ${requiredMin} ETB.` 
+        : `ለዚህ ትዕዛዝ የሚፈለገው አነስተኛ ክፍያ ${requiredMin} ETB ነው።`
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/cake-orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+        body: JSON.stringify({
+          ...form,
+          totalAmount: totalPrice
+        })
       });
       const data = await res.json();
       if (data.success) {
@@ -280,20 +313,30 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
                   <span className="text-white font-bold">{success.deliveryDate}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#8c7e7a]">Amount:</span>
+                  <span className="text-[#8c7e7a]">Total Cost:</span>
+                  <span className="text-white font-bold">{Number(success.totalAmount || success.amountPaid).toLocaleString()} ETB</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#8c7e7a]">Amount Paid:</span>
                   <span className="text-green-400 font-bold">{Number(success.amountPaid).toLocaleString()} ETB</span>
                 </div>
+                {Number(success.totalAmount || 0) > Number(success.amountPaid) && (
+                  <div className="flex justify-between">
+                    <span className="text-[#8c7e7a]">Remaining:</span>
+                    <span className="text-amber-400 font-bold">{(Number(success.totalAmount) - Number(success.amountPaid)).toLocaleString()} ETB</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-center pt-2">
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
                     window.location.origin + `/admin/verify?type=order&id=${success.id}&ref=${success.paymentReference}`
-                  )}&color=4a2c11&bgcolor=fdfbf7`}
+                  )}`}
                   width="120"
                   height="120"
                   alt="QR Verification Code"
-                  className="border-2 border-[#d4af37]/30 rounded-lg p-1 bg-white"
+                  className="border-2 border-[#d4af37]/30 rounded-lg p-3 bg-white"
                 />
               </div>
             </div>
@@ -576,15 +619,20 @@ export default function CakeOrderModal({ isOpen, onClose, lang: propLang, settin
               </div>
 
               <div>
-                <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Amount Due (ETB)</label>
+                <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Amount Paid (ETB)</label>
                 <input
                   type="number"
                   name="amountPaid"
                   value={form.amountPaid}
                   onChange={handleChange}
-                  className="input-field bg-white/5 text-gray-300 font-bold select-none"
-                  readOnly
+                  className="input-field font-mono font-bold text-[#d4af37]"
                 />
+                <div className="flex justify-between mt-1 text-[10px]">
+                  <span className="text-[#8c7e7a]">Total Cost: {totalPrice.toLocaleString()} ETB</span>
+                  <span className={Number(form.amountPaid) < totalPrice ? "text-amber-400 font-semibold" : "text-green-400"}>
+                    Remaining: {Math.max(0, totalPrice - Number(form.amountPaid)).toLocaleString()} ETB
+                  </span>
+                </div>
               </div>
 
               <div>

@@ -52,6 +52,7 @@ export default function Home() {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState("morning");
+  const [selectedProductForOrder, setSelectedProductForOrder] = useState(null);
 
   // Contact Form State
   const [contactForm, setContactForm] = useState({ name: "", email: "", phone: "", message: "" });
@@ -435,49 +436,95 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Bento Image Catalog Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {(products.length > 0 ? products : [
-                  {
-                    name: t.weddingCakes,
-                    category: "Cakes",
-                    basePrice: 800,
-                    image: "https://images.unsplash.com/photo-1535141192574-5d4897c13636?q=80&w=400&auto=format&fit=crop"
-                  },
-                  {
-                    name: t.birthdayCakes,
-                    category: "Cakes",
-                    basePrice: 800,
-                    image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=400&auto=format&fit=crop"
-                  },
-                  {
-                    name: "Celebration Cakes",
-                    category: "Cakes",
-                    basePrice: 800,
-                    image: "https://images.unsplash.com/photo-1587314168485-3236d6710814?q=80&w=400&auto=format&fit=crop"
-                  }
-                ]).map((cake, i) => (
-                  <div key={i} className="bento-card p-0 rounded-2xl overflow-hidden group relative min-h-[260px]">
-                    <img
-                      src={cake.image || "https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=600&auto=format&fit=crop"}
-                      alt={cake.name}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                    
-                    <div className="absolute bottom-0 left-0 right-0 p-6 space-y-2">
-                      <span className="bg-[#d4af37]/20 border border-[#d4af37]/35 text-[#d4af37] text-[9px] font-bold uppercase px-2 py-0.5 rounded-full inline-block">
-                        {cake.category}
-                      </span>
-                      <h3 className="font-serif text-xl font-bold text-white">{cake.name}</h3>
-                      <p className="text-xs text-[#c9bfbc] font-mono">Starting at {Number(cake.basePrice).toLocaleString()} ETB</p>
+              {/* Bento Image Catalog Grid grouped by Category */}
+              <div className="space-y-16">
+                {Object.keys(
+                  (products.length > 0 ? products : [
+                    {
+                      name: t.weddingCakes || "Wedding Cakes",
+                      category: "Cakes",
+                      basePrice: 800,
+                      image: "https://images.unsplash.com/photo-1535141192574-5d4897c13636?q=80&w=400&auto=format&fit=crop"
+                    },
+                    {
+                      name: t.birthdayCakes || "Birthday Cakes",
+                      category: "Cakes",
+                      basePrice: 800,
+                      image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=400&auto=format&fit=crop"
+                    },
+                    {
+                      name: "Celebration Cakes",
+                      category: "Cakes",
+                      basePrice: 800,
+                      image: "https://images.unsplash.com/photo-1587314168485-3236d6710814?q=80&w=400&auto=format&fit=crop"
+                    }
+                  ]).reduce((acc, p) => {
+                    const cat = p.category || "Cakes";
+                    if (!acc[cat]) acc[cat] = [];
+                    acc[cat].push(p);
+                    return acc;
+                  }, {})
+                ).map((catName) => {
+                  const groupedList = (products.length > 0 ? products : [
+                    {
+                      name: t.weddingCakes || "Wedding Cakes",
+                      category: "Cakes",
+                      basePrice: 800,
+                      image: "https://images.unsplash.com/photo-1535141192574-5d4897c13636?q=80&w=400&auto=format&fit=crop"
+                    },
+                    {
+                      name: t.birthdayCakes || "Birthday Cakes",
+                      category: "Cakes",
+                      basePrice: 800,
+                      image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=400&auto=format&fit=crop"
+                    },
+                    {
+                      name: "Celebration Cakes",
+                      category: "Cakes",
+                      basePrice: 800,
+                      image: "https://images.unsplash.com/photo-1587314168485-3236d6710814?q=80&w=400&auto=format&fit=crop"
+                    }
+                  ]).filter(p => (p.category || "Cakes") === catName);
+
+                  return (
+                    <div key={catName} className="space-y-6">
+                      <h3 className="font-serif text-lg font-bold text-[#c5a059] border-b border-[#4a2c11]/15 pb-2 inline-block uppercase tracking-wider">
+                        {catName}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {groupedList.map((cake, i) => (
+                          <div 
+                            key={i} 
+                            onClick={() => {
+                              setSelectedProductForOrder(cake.name);
+                              setOrderOpen(true);
+                            }}
+                            className="bento-card p-0 rounded-2xl overflow-hidden group relative min-h-[260px] cursor-pointer transform hover:scale-[1.01] transition-all duration-300 border border-[#4a2c11]/10 hover:border-[#d4af37]/30"
+                          >
+                            <img
+                              src={cake.image || "https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=600&auto=format&fit=crop"}
+                              alt={cake.name}
+                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                            
+                            <div className="absolute bottom-0 left-0 right-0 p-6 space-y-2">
+                              <span className="bg-[#d4af37]/20 border border-[#d4af37]/35 text-[#d4af37] text-[9px] font-bold uppercase px-2 py-0.5 rounded-full inline-block">
+                                {cake.category}
+                              </span>
+                              <h3 className="font-serif text-xl font-bold text-white">{cake.name}</h3>
+                              <p className="text-xs text-[#c9bfbc] font-mono">Starting at {Number(cake.basePrice).toLocaleString()} ETB</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
-              <div className="text-center pt-4">
-                <ShinyButton onClick={() => setOrderOpen(true)} className="mx-auto">
+              <div className="text-center pt-8">
+                <ShinyButton onClick={() => { setSelectedProductForOrder(null); setOrderOpen(true); }} className="mx-auto">
                   <Cake size={16} /> {t.customizerBtn}
                 </ShinyButton>
               </div>
@@ -672,12 +719,13 @@ export default function Home() {
         shiftCounts={shiftCounts}
       />
 
-      {/* Cake Order Modal */}
+       {/* Cake Order Modal */}
       <CakeOrderModal
         isOpen={orderOpen}
-        onClose={() => setOrderOpen(false)}
+        onClose={() => { setOrderOpen(false); setSelectedProductForOrder(null); }}
         lang={lang}
         settings={heroSettings}
+        initialProduct={selectedProductForOrder}
       />
     </div>
   );

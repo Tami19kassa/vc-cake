@@ -99,6 +99,7 @@ export default function AdminDashboard() {
     name: "",
     category: "Cakes",
     basePrice: "",
+    minPaymentAmount: "0",
     image: "",
     stock: "10",
     isEnabled: true
@@ -482,7 +483,7 @@ export default function AdminDashboard() {
       const resData = await res.json();
       if (resData.success) {
         setProdMsg(resData.message);
-        setProdForm({ id: null, name: "", category: "Cakes", basePrice: "", image: "", stock: "10", isEnabled: true });
+        setProdForm({ id: null, name: "", category: "Cakes", basePrice: "", minPaymentAmount: "0", image: "", stock: "10", isEnabled: true });
         setCustomCategory("");
         setIsCustomCategory(false);
         fetchProducts();
@@ -798,7 +799,9 @@ export default function AdminDashboard() {
                             <th className="px-4 py-3">Student</th>
                             <th className="px-4 py-3">Shift Details</th>
                             <th className="px-4 py-3">Reference ID</th>
-                            <th className="px-4 py-3">Amount Paid</th>
+                            <th className="px-4 py-3">Total</th>
+                            <th className="px-4 py-3">Paid</th>
+                            <th className="px-4 py-3">Remaining</th>
                             <th className="px-4 py-3 text-center">Status</th>
                             <th className="px-4 py-3 text-right">Actions</th>
                           </tr>
@@ -812,7 +815,11 @@ export default function AdminDashboard() {
                               </td>
                               <td className="px-4 py-3 font-semibold text-white capitalize">{reg.shift} shift</td>
                               <td className="px-4 py-3 font-mono font-bold text-white">{reg.paymentReference}</td>
-                              <td className="px-4 py-3 font-mono">{Number(reg.amountPaid).toFixed(2)} ETB</td>
+                              <td className="px-4 py-3 font-mono">{(reg.totalAmount || reg.amountPaid).toLocaleString()} ETB</td>
+                              <td className="px-4 py-3 font-mono text-green-400">{(reg.amountPaid).toLocaleString()} ETB</td>
+                              <td className={`px-4 py-3 font-mono ${Number(reg.totalAmount || 0) > Number(reg.amountPaid) ? "text-amber-400 font-semibold" : "text-[#8c7e7a]"}`}>
+                                {Math.max(0, Number(reg.totalAmount || 0) - Number(reg.amountPaid)).toLocaleString()} ETB
+                              </td>
                               <td className="px-4 py-3 text-center">
                                 <span
                                   className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
@@ -1032,7 +1039,11 @@ export default function AdminDashboard() {
                               <td className="px-4 py-3 font-semibold text-white">{order.deliveryDate}</td>
                               <td className="px-4 py-3">
                                 <span className="block font-mono font-bold text-white">{order.paymentReference}</span>
-                                <span className="block text-xs font-bold text-[#d4af37]">{Number(order.amountPaid).toFixed(2)} ETB</span>
+                                <span className="block text-[10px] text-[#8c7e7a]">Total: {Number(order.totalAmount || order.amountPaid).toLocaleString()} ETB</span>
+                                <span className="block text-[10px] text-green-400">Paid: {Number(order.amountPaid).toLocaleString()} ETB</span>
+                                {Number(order.totalAmount || 0) > Number(order.amountPaid) && (
+                                  <span className="block text-[10px] text-amber-400 font-semibold font-mono">Remaining: {(Number(order.totalAmount) - Number(order.amountPaid)).toLocaleString()} ETB</span>
+                                )}
                               </td>
                               <td className="px-4 py-3 text-center">
                                 <span
@@ -1734,6 +1745,8 @@ export default function AdminDashboard() {
                             />
                           )}
                         </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Product / Item Name</label>
                           <input
@@ -1752,6 +1765,17 @@ export default function AdminDashboard() {
                             value={prodForm.basePrice}
                             onChange={(e) => setProdForm({ ...prodForm, basePrice: e.target.value })}
                             placeholder="e.g. 800"
+                            className="input-field font-mono"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Min Payment Amount (ETB)</label>
+                          <input
+                            type="number"
+                            value={prodForm.minPaymentAmount}
+                            onChange={(e) => setProdForm({ ...prodForm, minPaymentAmount: e.target.value })}
+                            placeholder="e.g. 300 (0 = default)"
                             className="input-field font-mono"
                             required
                           />
@@ -1808,7 +1832,7 @@ export default function AdminDashboard() {
                           <button
                             type="button"
                             onClick={() => {
-                              setProdForm({ id: null, name: "", category: "Cakes", basePrice: "", image: "", stock: "10", isEnabled: true });
+                              setProdForm({ id: null, name: "", category: "Cakes", basePrice: "", minPaymentAmount: "0", image: "", stock: "10", isEnabled: true });
                               setIsCustomCategory(false);
                               setCustomCategory("");
                             }}
@@ -1844,6 +1868,7 @@ export default function AdminDashboard() {
                               <th className="px-4 py-3">Category</th>
                               <th className="px-4 py-3">Product Name</th>
                               <th className="px-4 py-3">Base Price</th>
+                              <th className="px-4 py-3">Min Payment</th>
                               <th className="px-4 py-3 text-center">Stock</th>
                               <th className="px-4 py-3 text-center">Status</th>
                               <th className="px-4 py-3 text-right">Actions</th>
@@ -1862,7 +1887,10 @@ export default function AdminDashboard() {
                                   <span>{prod.name}</span>
                                 </td>
                                 <td className="px-4 py-3 font-mono">{Number(prod.basePrice).toLocaleString()} ETB</td>
-                                <td className="px-4 py-3 text-center font-mono font-bold text-white">{prod.stock !== undefined ? prod.stock : 10}</td>
+                                 <td className="px-4 py-3 font-mono text-[#d4af37]">
+                                   {Number(prod.minPaymentAmount) > 0 ? `${Number(prod.minPaymentAmount).toLocaleString()} ETB` : "Default"}
+                                 </td>
+                                 <td className="px-4 py-3 text-center font-mono font-bold text-white">{prod.stock !== undefined ? prod.stock : 10}</td>
                                 <td className="px-4 py-3 text-center">
                                   <button
                                     onClick={() => handleProductToggle(prod)}
@@ -1884,6 +1912,7 @@ export default function AdminDashboard() {
                                           name: prod.name, 
                                           category: prod.category, 
                                           basePrice: String(prod.basePrice), 
+                                          minPaymentAmount: String(prod.minPaymentAmount !== undefined ? prod.minPaymentAmount : 0),
                                           image: prod.image || "", 
                                           stock: String(prod.stock !== undefined ? prod.stock : 10),
                                           isEnabled: prod.isEnabled 

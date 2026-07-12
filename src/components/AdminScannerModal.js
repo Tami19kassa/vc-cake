@@ -73,6 +73,70 @@ export default function AdminScannerModal({ isOpen, onClose }) {
     };
   }, [isOpen]);
 
+  const preprocessImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          
+          const maxDim = 800;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          
+          ctx.drawImage(img, 0, 0, w, h);
+          
+          const imgData = ctx.getImageData(0, 0, w, h);
+          const data = imgData.data;
+          
+          let sum = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            const brightness = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+            sum += brightness;
+          }
+          const avgBrightness = sum / (data.length / 4);
+          const threshold = avgBrightness > 128 ? avgBrightness - 30 : avgBrightness + 30;
+          
+          for (let i = 0; i < data.length; i += 4) {
+            const brightness = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+            const val = brightness < threshold ? 0 : 255;
+            data[i] = val;
+            data[i+1] = val;
+            data[i+2] = val;
+            data[i+3] = 255;
+          }
+          ctx.putImageData(imgData, 0, 0);
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const processedFile = new File([blob], file.name, { type: "image/png" });
+              resolve(processedFile);
+            } else {
+              resolve(file);
+            }
+          }, "image/png");
+        };
+        img.onerror = () => reject(new Error("Failed to load image element."));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error("FileReader failed."));
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -90,7 +154,15 @@ export default function AdminScannerModal({ isOpen, onClose }) {
       }
 
       const html5QrCode = scannerInstanceRef.current;
-      html5QrCode.scanFile(file, false)
+
+      let processedFile = file;
+      try {
+        processedFile = await preprocessImage(file);
+      } catch (err) {
+        console.warn("Preprocessing failed, using original file:", err);
+      }
+
+      html5QrCode.scanFile(processedFile, false)
         .then((decodedText) => {
           setSuccess(decodedText);
           if (decodedText.startsWith("http://") || decodedText.startsWith("https://")) {
@@ -100,8 +172,20 @@ export default function AdminScannerModal({ isOpen, onClose }) {
           }
         })
         .catch((err) => {
-          console.error(err);
-          setError("Could not find a valid QR code in the uploaded image. Please ensure the image is clear and contains a single QR code.");
+          console.log("Processed scan failed, trying original:", err);
+          html5QrCode.scanFile(file, false)
+            .then((decodedText) => {
+              setSuccess(decodedText);
+              if (decodedText.startsWith("http://") || decodedText.startsWith("https://")) {
+                window.location.href = decodedText;
+              } else {
+                setError(`Scanned code: ${decodedText} (Not a valid verification URL)`);
+              }
+            })
+            .catch((err2) => {
+              console.error(err2);
+              setError("Could not find a valid QR code in the uploaded image. Please ensure the image is clear and contains a single QR code.");
+            });
         });
     } catch (err) {
       console.error(err);

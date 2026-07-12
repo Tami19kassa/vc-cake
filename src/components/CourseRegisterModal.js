@@ -7,6 +7,7 @@ import { ShinyButton } from "@/components/ShinyButton";
 
 export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, settings, selectedShift, shiftCounts }) {
   const [lang, setLang] = useState("en");
+  const [totalPrice, setTotalPrice] = useState(0);
   const [form, setForm] = useState({
     studentName: "",
     studentPhone: "",
@@ -31,6 +32,7 @@ export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, s
   useEffect(() => {
     if (isOpen && settings) {
       const price = settings.coursePrice || 2500;
+      setTotalPrice(price);
       setForm(f => ({ ...f, amountPaid: String(price) }));
 
       if (selectedShift) {
@@ -66,7 +68,7 @@ export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, s
     if (!success) return;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
       window.location.origin + `/admin/verify?type=registration&id=${success.id}&ref=${success.paymentReference}`
-    )}&color=4a2c11&bgcolor=fdfbf7`;
+    )}`;
 
     const printWindow = window.open("", "_blank");
     
@@ -76,7 +78,11 @@ export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, s
       { label: "Payment Method", value: (success.paymentMethod || "cbe").toUpperCase() },
       { label: "Transaction ID / Ref", value: success.paymentReference },
       { label: "Course Shift", value: success.shift.toUpperCase() },
-      { label: "Amount Paid", value: `${Number(success.amountPaid).toLocaleString()} ETB` }
+      { label: "Total Price", value: `${Number(success.totalAmount || success.amountPaid).toLocaleString()} ETB` },
+      { label: "Amount Paid", value: `${Number(success.amountPaid).toLocaleString()} ETB` },
+      ...(Number(success.totalAmount || 0) > Number(success.amountPaid) ? [
+        { label: "Remaining Balance", value: `${(Number(success.totalAmount) - Number(success.amountPaid)).toLocaleString()} ETB` }
+      ] : [])
     ].map(row => `
       <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e7e3dd; font-size: 13px;">
         <span style="color: #8c7e7a; font-weight: 500;">${row.label}:</span>
@@ -95,7 +101,7 @@ export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, s
             .sub { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #8c7e7a; font-weight: bold; }
             .title { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: #c5a059; margin: 15px 0; font-weight: bold; background: rgba(74,44,17,0.03); padding: 8px; border-radius: 6px; }
             .qr-code { margin: 25px 0; display: flex; justify-content: center; }
-            .qr-code img { border: 4px solid #4a2c11; border-radius: 8px; }
+            .qr-code img { border: 4px solid #4a2c11; border-radius: 8px; padding: 12px; background: white; }
             .footer { font-size: 11px; color: #8c7e7a; margin-top: 25px; border-top: 1px solid #f0ece6; padding-top: 15px; font-style: italic; line-height: 1.5; }
           </style>
         </head>
@@ -137,12 +143,26 @@ export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, s
       return;
     }
 
+    const minPayment = settings?.minPaymentAmount !== undefined ? Number(settings.minPaymentAmount) : 500;
+    const requiredMin = Math.min(totalPrice, minPayment);
+
+    if (Number(form.amountPaid) < requiredMin) {
+      setError(lang === "en" 
+        ? `Minimum required payment for registration is ${requiredMin} ETB.` 
+        : `ለዚህ ምዝገባ የሚፈለገው አነስተኛ ክፍያ ${requiredMin} ETB ነው።`
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/course-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+        body: JSON.stringify({
+          ...form,
+          totalAmount: totalPrice
+        })
       });
       const data = await res.json();
       if (data.success) {
@@ -153,7 +173,7 @@ export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, s
           studentEmail: "",
           shift: "morning",
           paymentReference: "",
-          amountPaid: "2500",
+          amountPaid: String(totalPrice),
           paymentMethod: "cbe"
         });
       } else {
@@ -219,20 +239,30 @@ export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, s
                   <span className="text-white font-bold uppercase">{success.shift}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#8c7e7a]">Amount:</span>
+                  <span className="text-[#8c7e7a]">Total Price:</span>
+                  <span className="text-white font-bold">{Number(success.totalAmount || success.amountPaid).toLocaleString()} ETB</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#8c7e7a]">Amount Paid:</span>
                   <span className="text-green-400 font-bold">{Number(success.amountPaid).toLocaleString()} ETB</span>
                 </div>
+                {Number(success.totalAmount || 0) > Number(success.amountPaid) && (
+                  <div className="flex justify-between">
+                    <span className="text-[#8c7e7a]">Remaining:</span>
+                    <span className="text-amber-400 font-bold">{(Number(success.totalAmount) - Number(success.amountPaid)).toLocaleString()} ETB</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-center pt-2">
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
                     window.location.origin + `/admin/verify?type=registration&id=${success.id}&ref=${success.paymentReference}`
-                  )}&color=4a2c11&bgcolor=fdfbf7`}
+                  )}`}
                   width="120"
                   height="120"
                   alt="QR Verification Code"
-                  className="border-2 border-[#d4af37]/30 rounded-lg p-1 bg-white"
+                  className="border-2 border-[#d4af37]/30 rounded-lg p-3 bg-white"
                 />
               </div>
             </div>
@@ -422,15 +452,20 @@ export default function CourseRegisterModal({ isOpen, onClose, lang: propLang, s
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">{t.amountPaidLabel}</label>
+                <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Amount Paid (ETB)</label>
                 <input
                   type="number"
                   name="amountPaid"
                   value={form.amountPaid}
                   onChange={handleChange}
-                  className="input-field bg-white/5 text-gray-300 select-none font-bold"
-                  readOnly
+                  className="input-field font-mono font-bold text-[#d4af37]"
                 />
+                <div className="flex justify-between mt-1 text-[10px]">
+                  <span className="text-[#8c7e7a]">Total Cost: {totalPrice.toLocaleString()} ETB</span>
+                  <span className={Number(form.amountPaid) < totalPrice ? "text-amber-400 font-semibold" : "text-green-400"}>
+                    Remaining: {Math.max(0, totalPrice - Number(form.amountPaid)).toLocaleString()} ETB
+                  </span>
+                </div>
               </div>
 
               <div>
