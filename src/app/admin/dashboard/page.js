@@ -19,7 +19,8 @@ import {
   Edit2,
   AlertCircle,
   QrCode,
-  Layers
+  Layers,
+  Upload
 } from "lucide-react";
 import AdminScannerModal from "@/components/AdminScannerModal";
 
@@ -27,6 +28,31 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [token, setToken] = useState("");
   const [adminUser, setAdminUser] = useState(null);
+
+  const handleImageUpload = async (file) => {
+    if (!file) return null;
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        return resData.url;
+      } else {
+        alert("Upload failed: " + resData.error);
+        return null;
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Error uploading file to local disk.");
+      return null;
+    }
+  };
+
   const [activeTab, setActiveTab] = useState("registrations");
   
   // Dashboard Data State
@@ -570,27 +596,32 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-[#0c0706] text-white flex flex-col font-sans">
       
       {/* Dashboard Top Header bar */}
-      <header className="bg-[#120a09] border-b border-[#d4af37]/15 py-4 px-6 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="bg-[#d4af37]/10 p-2 rounded border border-[#d4af37]/35 text-[#d4af37]">
-            <Shield size={20} />
+      <header className="bg-[#120a09] border-b border-[#d4af37]/15 py-4 px-4 sm:px-6 flex flex-col md:flex-row gap-4 justify-between items-center">
+        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#d4af37]/10 p-2 rounded border border-[#d4af37]/35 text-[#d4af37]">
+              <Shield size={20} />
+            </div>
+            <div>
+              <h1 className="font-serif text-base sm:text-lg font-bold tracking-tight">VC CAKE ACADEMY</h1>
+              <p className="text-[9px] sm:text-[10px] text-[#c9bfbc] tracking-widest uppercase">Admin Panel Control Center</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-serif text-lg font-bold">VC CAKE ACADEMY</h1>
-            <p className="text-[10px] text-[#c9bfbc] tracking-widest uppercase">Admin Panel Control Center</p>
-          </div>
+          <span className="text-[10px] text-[#c9bfbc] bg-[#d4af37]/10 border border-[#d4af37]/20 px-2 py-0.5 rounded md:hidden">
+            Admin: <strong>{adminUser?.username}</strong>
+          </span>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-[#c9bfbc] hidden sm:inline">Logged in: <strong>{adminUser?.username}</strong></span>
+        <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto justify-end">
+          <span className="text-xs text-[#c9bfbc] hidden md:inline">Logged in: <strong>{adminUser?.username}</strong></span>
           <button
             onClick={() => setScannerOpen(true)}
-            className="flex items-center gap-1.5 bg-[#d4af37]/10 hover:bg-[#d4af37]/20 border border-[#d4af37]/35 text-[#d4af37] text-xs px-3 py-1.5 rounded transition cursor-pointer"
+            className="flex items-center justify-center gap-1.5 bg-[#d4af37]/10 hover:bg-[#d4af37]/20 border border-[#d4af37]/35 text-[#d4af37] text-xs px-3 py-2 rounded transition cursor-pointer flex-1 md:flex-none"
           >
             <QrCode size={13} /> Scan QR Code
           </button>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1.5 bg-red-950/60 hover:bg-red-900 border border-red-500/20 text-red-300 text-xs px-3 py-1.5 rounded transition cursor-pointer"
+            className="flex items-center justify-center gap-1.5 bg-red-950/60 hover:bg-red-900 border border-red-500/20 text-red-300 text-xs px-3 py-2 rounded transition cursor-pointer flex-1 md:flex-none"
           >
             <LogOut size={13} /> Logout
           </button>
@@ -607,57 +638,60 @@ export default function AdminDashboard() {
       <div className="flex-1 flex flex-col md:flex-row">
         
         {/* Sidebar Nav */}
-        <aside className="w-full md:w-64 bg-[#0e0807] border-b md:border-b-0 md:border-r border-[#d4af37]/10 p-4 space-y-2 shrink-0">
-          {[
-            { id: "registrations", label: "Course Registrations", icon: <Users size={16} />, count: data.registrations.length },
-            { id: "orders", label: "Celebration Cake Orders", icon: <Cake size={16} />, count: data.orders.length },
-            { id: "products", label: "Manage Catalog", icon: <Layers size={16} />, count: products.length },
-            { id: "articles", label: "Vlogs & Blogs", icon: <FileText size={16} />, count: articles.length },
-            { id: "settings", label: "Hero Settings", icon: <Settings size={16} /> },
-            { id: "contacts", label: "User Inquiries", icon: <MessageSquare size={16} />, count: data.contacts.length }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setSearch("");
-              }}
-              className={`flex items-center justify-between w-full text-left px-3 py-2.5 rounded text-sm transition cursor-pointer ${
-                activeTab === tab.id
-                  ? "bg-[#d4af37]/10 text-[#d4af37] font-semibold border border-[#d4af37]/25"
-                  : "text-[#c9bfbc] hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                {tab.icon}
-                <span>{tab.label}</span>
-              </div>
-              {tab.count !== undefined && (
-                <span className="text-[10px] bg-white/10 text-white font-bold px-2 py-0.5 rounded-full font-mono">
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          ))}
+        <aside className="w-full md:w-64 bg-[#0e0807] border-b md:border-b-0 md:border-r border-[#d4af37]/10 p-4 shrink-0">
+          <div className="grid grid-cols-2 md:grid-cols-1 gap-2">
+            {[
+              { id: "registrations", label: "Registrations", icon: <Users size={15} />, count: data.registrations.length },
+              { id: "orders", label: "Cake Orders", icon: <Cake size={15} />, count: data.orders.length },
+              { id: "products", label: "Catalog", icon: <Layers size={15} />, count: products.length },
+              { id: "articles", label: "Vlogs/Blogs", icon: <FileText size={15} />, count: articles.length },
+              { id: "settings", label: "Settings", icon: <Settings size={15} /> },
+              { id: "contacts", label: "Inquiries", icon: <MessageSquare size={15} />, count: data.contacts.length }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setSearch("");
+                }}
+                className={`flex items-center justify-between w-full text-left px-3 py-2.5 rounded text-xs sm:text-sm transition cursor-pointer ${
+                  activeTab === tab.id
+                    ? "bg-[#d4af37]/10 text-[#d4af37] font-semibold border border-[#d4af37]/25"
+                    : "text-[#c9bfbc] hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {tab.icon}
+                  <span className="truncate">{tab.label}</span>
+                </div>
+                {tab.count !== undefined && (
+                  <span className="text-[10px] bg-white/10 text-white font-bold px-1.5 py-0.5 rounded-full font-mono shrink-0">
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
           
-          <div className="pt-8 border-t border-[#d4af37]/10 mt-8 space-y-2">
+          <div className="pt-4 border-t border-[#d4af37]/10 mt-4 flex md:flex-col gap-3 justify-between md:justify-start">
             <Link
               href="/"
-              className="flex items-center gap-2 text-xs text-[#8c7e7a] hover:text-[#d4af37] transition px-3 py-1"
+              className="flex items-center gap-1 text-[11px] sm:text-xs text-[#8c7e7a] hover:text-[#d4af37] transition py-1"
             >
-              ← Back to Main Website
+              ← Back to Website
             </Link>
             <Link
               href="/cbe-bank-portal"
-              className="flex items-center gap-2 text-xs text-[#8c7e7a] hover:text-blue-400 transition px-3 py-1"
+              target="_blank"
+              className="flex items-center gap-1 text-[11px] sm:text-xs text-[#8c7e7a] hover:text-blue-400 transition py-1"
             >
-              🏦 Open CBE Merchant Ledger
+              🏦 CBE Ledger
             </Link>
           </div>
         </aside>
 
         {/* Workspace panel */}
-        <main className="flex-1 p-6 sm:p-8 space-y-6">
+        <main className="flex-1 p-4 sm:p-8 space-y-6">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-32 space-y-3">
               <div className="w-10 h-10 border-2 border-t-transparent border-[#d4af37] rounded-full animate-spin" />
@@ -671,7 +705,7 @@ export default function AdminDashboard() {
               {activeTab === "registrations" && (
                 <div className="space-y-6">
                   {/* Summary Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-[#120a09] border border-[#d4af37]/10 p-4 rounded-lg flex flex-col justify-between">
                       <span className="text-[10px] text-[#8c7e7a] uppercase font-semibold">Total Registered</span>
                       <span className="text-xl font-bold font-serif text-white mt-1">{data.registrations.length}</span>
@@ -855,7 +889,7 @@ export default function AdminDashboard() {
               {activeTab === "orders" && (
                 <div className="space-y-6">
                   {/* Summary Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-[#120a09] border border-[#d4af37]/10 p-4 rounded-lg flex flex-col justify-between">
                       <span className="text-[10px] text-[#8c7e7a] uppercase font-semibold">Total Orders Made</span>
                       <span className="text-xl font-bold font-serif text-white mt-1">{data.orders.length}</span>
@@ -1123,21 +1157,51 @@ export default function AdminDashboard() {
                       </div>
 
                       <div>
-                        <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">
-                          {artForm.type === "vlog" ? "YouTube Embed URL" : "Blog Image URL"}
-                        </label>
-                        <input
-                          type="url"
-                          value={artForm.mediaUrl}
-                          onChange={(e) => setArtForm({ ...artForm, mediaUrl: e.target.value })}
-                          placeholder={
-                            artForm.type === "vlog"
-                              ? "e.g. https://www.youtube.com/embed/v8yH7Boc9sw"
-                              : "e.g. https://images.unsplash.com/photo-..."
-                          }
-                          className="input-field font-mono text-xs"
-                          required
-                        />
+                        {artForm.type === "vlog" ? (
+                          <>
+                            <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">YouTube Embed URL</label>
+                            <input
+                              type="url"
+                              value={artForm.mediaUrl}
+                              onChange={(e) => setArtForm({ ...artForm, mediaUrl: e.target.value })}
+                              placeholder="e.g. https://www.youtube.com/embed/v8yH7Boc9sw"
+                              className="input-field font-mono text-xs"
+                              required
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Blog Image (Upload from Local Disk)</label>
+                            <div className="flex gap-3 items-center">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={async (e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    const uploadedUrl = await handleImageUpload(file);
+                                    if (uploadedUrl) {
+                                      setArtForm({ ...artForm, mediaUrl: uploadedUrl });
+                                    }
+                                  }
+                                }}
+                                className="input-field text-xs text-[#8c7e7a]"
+                              />
+                              {artForm.mediaUrl && (
+                                <div className="shrink-0 flex items-center gap-2 border border-[#d4af37]/25 p-1 rounded bg-[#0c0706]">
+                                  <img src={artForm.mediaUrl} alt="Blog Preview" className="w-12 h-12 object-cover rounded" />
+                                  <button
+                                    type="button"
+                                    onClick={() => setArtForm({ ...artForm, mediaUrl: "" })}
+                                    className="text-red-400 text-xs px-2 hover:underline"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
 
                       {/* Content textareas */}
@@ -1319,16 +1383,37 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Hero Image URL (Background removed PNG)</label>
-                      <input
-                        type="text"
-                        value={heroForm.imageUrl}
-                        onChange={(e) => setHeroForm({ ...heroForm, imageUrl: e.target.value })}
-                        placeholder="e.g. https://images.unsplash.com/photo-1581299894007-aaa50297cf16?q=80&w=800&auto=format&fit=crop"
-                        className="input-field font-mono text-xs"
-                      />
-                      <span className="text-[10px] text-[#8c7e7a] block mt-1">Provide a transparent background PNG or high-quality image URL representing the chef.</span>
+                     <div>
+                      <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Hero Image (Upload from Local Disk)</label>
+                      <div className="flex gap-4 items-center">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const uploadedUrl = await handleImageUpload(file);
+                              if (uploadedUrl) {
+                                setHeroForm({ ...heroForm, imageUrl: uploadedUrl });
+                              }
+                            }
+                          }}
+                          className="input-field text-xs text-[#8c7e7a]"
+                        />
+                        {heroForm.imageUrl && (
+                          <div className="shrink-0 flex items-center gap-2 border border-[#d4af37]/25 p-1 rounded bg-[#0c0706]">
+                            <img src={heroForm.imageUrl} alt="Hero Preview" className="w-12 h-12 object-cover rounded" />
+                            <button
+                              type="button"
+                              onClick={() => setHeroForm({ ...heroForm, imageUrl: "" })}
+                              className="text-red-400 text-xs px-2 hover:underline"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-[#8c7e7a] block mt-1">Select a transparent background PNG or high-quality photo representing the chef.</span>
                     </div>
 
                     {/* SECTION: CBE CREDENTIALS */}
@@ -1648,14 +1733,35 @@ export default function AdminDashboard() {
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                         <div className="md:col-span-2">
-                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Image URL</label>
-                          <input
-                            type="text"
-                            value={prodForm.image || ""}
-                            onChange={(e) => setProdForm({ ...prodForm, image: e.target.value })}
-                            placeholder="e.g. https://images.unsplash.com/photo-..."
-                            className="input-field"
-                          />
+                          <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Product Image (Upload from Local Disk)</label>
+                          <div className="flex gap-3 items-center">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const uploadedUrl = await handleImageUpload(file);
+                                  if (uploadedUrl) {
+                                    setProdForm({ ...prodForm, image: uploadedUrl });
+                                  }
+                                }
+                              }}
+                              className="input-field text-xs text-[#8c7e7a]"
+                            />
+                            {prodForm.image && (
+                              <div className="shrink-0 flex items-center gap-2 border border-[#d4af37]/25 p-1 rounded bg-[#0c0706]">
+                                <img src={prodForm.image} alt="Product Preview" className="w-12 h-12 object-cover rounded" />
+                                <button
+                                  type="button"
+                                  onClick={() => setProdForm({ ...prodForm, image: "" })}
+                                  className="text-red-400 text-xs px-2 hover:underline"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div>
                           <label className="block text-xs text-[#c9bfbc] mb-1 font-medium">Available Stock Quantity</label>

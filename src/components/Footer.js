@@ -7,6 +7,7 @@ import { translations } from "@/lib/translations";
 
 export default function Footer({ settings }) {
   const [lang, setLang] = useState("en");
+  const [clickCount, setClickCount] = useState(0);
 
   useEffect(() => {
     const handleLanguageChange = () => {
@@ -17,6 +18,17 @@ export default function Footer({ settings }) {
     window.addEventListener("languageChange", handleLanguageChange, { passive: true });
     return () => window.removeEventListener("languageChange", handleLanguageChange);
   }, []);
+
+  const handleBrandClick = () => {
+    setClickCount(c => {
+      const nextCount = c + 1;
+      if (nextCount >= 5) {
+        window.location.href = "/admin/login";
+        return 0;
+      }
+      return nextCount;
+    });
+  };
 
   const t = translations[lang] || translations["en"];
 
@@ -34,7 +46,7 @@ export default function Footer({ settings }) {
           
           {/* Brand Info */}
           <div className="space-y-4 col-span-1 md:col-span-2">
-            <div className="flex items-center gap-3">
+            <div onClick={handleBrandClick} className="flex items-center gap-3 cursor-pointer select-none active:opacity-75 transition-opacity">
               <div className="w-8 h-8 rounded-full bg-[#d4af37] flex items-center justify-center text-black font-serif font-bold text-sm">
                 VC
               </div>

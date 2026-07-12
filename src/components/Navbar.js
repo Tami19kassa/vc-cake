@@ -141,18 +141,30 @@ export default function Navbar() {
             </div>
 
             {/* Mobile menu toggle */}
-            <div className="md:hidden flex items-center gap-3">
+            <div className="md:hidden flex items-center gap-2">
               {/* Language Switcher for Mobile */}
               <button
                 onClick={toggleLanguage}
                 className="flex items-center justify-center p-2 rounded-full bg-[#4a2c11]/5 text-[#4a2c11] hover:bg-[#4a2c11]/10 transition cursor-pointer"
+                title={lang === "en" ? "Switch language" : "ቋንቋ ቀይር"}
               >
                 <Globe size={18} />
               </button>
 
+              {/* PWA Install Button for Mobile */}
+              {isInstallable && (
+                <button
+                  onClick={handleInstallClick}
+                  className="flex items-center justify-center p-2 rounded-full bg-[#c5a059]/15 text-[#4a2c11] border border-[#c5a059]/35 hover:bg-[#c5a059]/25 transition cursor-pointer animate-pulse"
+                  title={lang === "en" ? "Install App" : "መተግበሪያ ጫን"}
+                >
+                  <Download size={18} />
+                </button>
+              )}
+
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="text-[#4a2c11] hover:text-[#c5a059] transition cursor-pointer"
+                className="text-[#4a2c11] hover:text-[#c5a059] transition cursor-pointer p-1"
               >
                 {isOpen ? <X size={26} /> : <Menu size={26} />}
               </button>

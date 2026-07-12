@@ -1,66 +1,113 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { X, Camera, AlertCircle } from "lucide-react";
+import { X, Camera, AlertCircle, Upload } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 
 export default function AdminScannerModal({ isOpen, onClose }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const scannerRef = useRef(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const scannerInstanceRef = useRef(null);
+
+  const stopCamera = async () => {
+    if (scannerInstanceRef.current && scannerInstanceRef.current.isScanning) {
+      try {
+        await scannerInstanceRef.current.stop();
+        scannerInstanceRef.current.clear();
+      } catch (err) {
+        console.error("Error stopping camera:", err);
+      }
+    }
+    setCameraActive(false);
+  };
+
+  const startCamera = async () => {
+    setError("");
+    setSuccess("");
+    const scannerId = "qr-reader-container";
+
+    try {
+      if (!scannerInstanceRef.current) {
+        scannerInstanceRef.current = new Html5Qrcode(scannerId);
+      }
+      
+      const html5QrCode = scannerInstanceRef.current;
+      await html5QrCode.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 }
+        },
+        (decodedText) => {
+          setSuccess(decodedText);
+          if (decodedText.startsWith("http://") || decodedText.startsWith("https://")) {
+            window.location.href = decodedText;
+          } else {
+            setError(`Scanned code: ${decodedText} (Not a valid verification URL)`);
+          }
+        },
+        () => {
+          // Silence noise frame errors
+        }
+      );
+      setCameraActive(true);
+    } catch (err) {
+      console.error("Camera init error:", err);
+      setError("Failed to start camera. Please ensure permissions are granted, or upload a photo below.");
+      setCameraActive(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) return;
 
-    let html5QrCode;
-    const scannerId = "qr-reader-container";
-
-    // Wait slightly for DOM to render the target div
+    // Wait slightly for DOM to render the container
     const timer = setTimeout(() => {
-      try {
-        html5QrCode = new Html5Qrcode(scannerId);
-        
-        html5QrCode.start(
-          { facingMode: "environment" },
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 }
-          },
-          (decodedText) => {
-            setSuccess(decodedText);
-            
-            // Auto redirect if valid url, otherwise notify
-            if (decodedText.startsWith("http://") || decodedText.startsWith("https://")) {
-              window.location.href = decodedText;
-            } else {
-              setError(`Scanned code: ${decodedText} (Not a valid verification URL)`);
-            }
-          },
-          (errorMessage) => {
-            // Silence noise frame errors
-          }
-        ).catch(err => {
-          console.error("Camera init error:", err);
-          setError("Failed to start camera. Please ensure permissions are granted.");
-        });
-
-      } catch (err) {
-        console.error("Scanner setup error:", err);
-        setError("Setup error starting QR scanner.");
-      }
+      startCamera();
     }, 300);
 
     return () => {
       clearTimeout(timer);
-      if (html5QrCode) {
-        if (html5QrCode.isScanning) {
-          html5QrCode.stop().then(() => {
-            html5QrCode.clear();
-          }).catch(err => console.error("Error stopping scanner:", err));
-        }
-      }
+      stopCamera();
     };
   }, [isOpen]);
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setError("");
+    setSuccess("");
+
+    try {
+      // Stop the camera if running
+      await stopCamera();
+
+      const scannerId = "qr-reader-container";
+      if (!scannerInstanceRef.current) {
+        scannerInstanceRef.current = new Html5Qrcode(scannerId);
+      }
+
+      const html5QrCode = scannerInstanceRef.current;
+      html5QrCode.scanFile(file, false)
+        .then((decodedText) => {
+          setSuccess(decodedText);
+          if (decodedText.startsWith("http://") || decodedText.startsWith("https://")) {
+            window.location.href = decodedText;
+          } else {
+            setError(`Scanned code: ${decodedText} (Not a valid verification URL)`);
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+          setError("Could not find a valid QR code in the uploaded image. Please ensure the image is clear and contains a single QR code.");
+        });
+    } catch (err) {
+      console.error(err);
+      setError("Failed to process uploaded file scanner.");
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -100,15 +147,46 @@ export default function AdminScannerModal({ isOpen, onClose }) {
         <div className="relative bg-black aspect-square max-h-64 mx-auto rounded-xl overflow-hidden border border-[#d4af37]/10 flex items-center justify-center">
           <div id="qr-reader-container" className="w-full h-full"></div>
           
-          {!success && !error && (
+          {!success && !error && !cameraActive && (
+            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-4 text-center">
+              <span className="text-xs text-[#c9bfbc]/80 mb-2">Camera scanner stopped or failed to load.</span>
+              <button 
+                onClick={startCamera} 
+                className="bg-[#d4af37]/20 border border-[#d4af37]/45 text-[#d4af37] text-xs py-1 px-3 rounded cursor-pointer hover:bg-[#d4af37]/35 transition"
+              >
+                Retry Camera
+              </button>
+            </div>
+          )}
+
+          {!success && !error && cameraActive && (
             <div className="absolute inset-0 border-2 border-dashed border-[#d4af37]/45 pointer-events-none rounded-xl m-8 flex items-center justify-center">
               <span className="text-[10px] text-[#c9bfbc]/60 uppercase tracking-widest text-center px-4">Center receipt QR code inside box</span>
             </div>
           )}
         </div>
 
+        {/* File upload option */}
+        <div className="mt-4 pt-4 border-t border-[#d4af37]/15">
+          <label className="block text-xs font-semibold text-center text-[#c9bfbc] mb-2">
+            Or upload a screenshot / photo of the receipt QR Code:
+          </label>
+          <div className="flex justify-center">
+            <label className="gold-btn py-2 px-5 rounded text-xs font-semibold cursor-pointer inline-flex items-center gap-1.5 transition hover:bg-[#d4af37]/25">
+              <Upload size={14} />
+              <span>Choose Photo to Scan</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </label>
+          </div>
+        </div>
+
         <p className="text-[10px] text-[#8c7e7a] text-center mt-4">
-          Allows administrative scanning using laptop webcam or phone camera. Scanned links will automatically open the verification status screen.
+          Allows administrative scanning using laptop webcam, phone camera, or receipt file upload.
         </p>
 
       </div>
