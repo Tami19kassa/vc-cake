@@ -193,10 +193,8 @@ export default function AdminScannerModal({ isOpen, onClose }) {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+    <div className={`fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-in fade-in duration-200 ${isOpen ? "" : "hidden"}`}>
       <div className="bg-[#120a09] border border-[#d4af37]/25 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl relative p-6">
         
         {/* Header */}
